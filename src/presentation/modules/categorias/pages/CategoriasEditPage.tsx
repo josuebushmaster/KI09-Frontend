@@ -12,9 +12,15 @@ const CategoriasEditPage = () => {
 
   useEffect(() => {
     if (!id) return;
+    const parsed = Number(id);
+    if (!Number.isFinite(parsed)) {
+      console.error('Invalid id param:', id);
+      setLoading(false);
+      return;
+    }
     const load = async () => {
       try {
-        const data = await getCategoria(Number(id));
+        const data = await getCategoria(parsed);
         setCategoria(data);
       } catch (err) {
         console.error(err);

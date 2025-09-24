@@ -1,8 +1,12 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useProductos } from '../hooks/useProductos';
+import { ConfirmModal, useStatus } from '../../../core';
 
 const ProductoList = () => {
   const { items: productos, loading, error, load, remove } = useProductos();
+  const [pendingDelete, setPendingDelete] = useState<{ id: number; nombre?: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const { show } = useStatus();
 
   useEffect(() => {
     load();
@@ -28,14 +32,7 @@ const ProductoList = () => {
               <div className="mt-4 flex space-x-2">
                 <button className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">Editar</button>
                 <button
-                  onClick={async () => {
-                    if (!confirm('¿Eliminar este producto?')) return;
-                    try {
-                      await remove(p.id_producto);
-                    } catch (err) {
-                      alert(err instanceof Error ? err.message : 'Error al eliminar');
-                    }
-                  }}
+                  onClick={() => setPendingDelete({ id: Number(p.id_producto), nombre: p.nombre })}
                   className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
                 >
                   Eliminar
@@ -45,6 +42,29 @@ const ProductoList = () => {
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        open={!!pendingDelete}
+        title={`Eliminar producto${pendingDelete?.nombre ? `: ${pendingDelete.nombre}` : ''}`}
+        description="Esta acción no se puede deshacer. ¿Deseas continuar?"
+        confirmLabel="Sí, eliminar"
+        cancelLabel="No, cancelar"
+        loading={deleting}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={async () => {
+          if (!pendingDelete) return;
+          try {
+            setDeleting(true);
+            await remove(pendingDelete.id);
+            setPendingDelete(null);
+          } catch (err) {
+            const message = err instanceof Error ? err.message : String(err);
+            show({ title: 'Error al eliminar', message: `Error al eliminar: ${message}`, detail: err, variant: 'error' });
+          } finally {
+            setDeleting(false);
+          }
+        }}
+      />
     </div>
   );
 };

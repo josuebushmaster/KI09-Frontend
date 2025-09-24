@@ -66,3 +66,4 @@ export default function CategoriaForm({ initial = {}, onSubmit, submitLabel = 'G
     </form>
   );
 }
+

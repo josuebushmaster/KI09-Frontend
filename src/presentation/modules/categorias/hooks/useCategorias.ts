@@ -4,6 +4,7 @@ import type { Categoria } from '../../../../domain/entities';
 
 export function useCategorias() {
   const [items, setItems] = useState<Categoria[]>([]);
+  const [invalid, setInvalid] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -11,8 +12,9 @@ export function useCategorias() {
     setLoading(true);
     setError(null);
     try {
-      const data = await service.listCategorias();
-      setItems(data);
+  const data = await service.listCategoriasDetailed();
+  setItems(data.valid);
+  setInvalid(data.invalid);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
@@ -27,10 +29,12 @@ export function useCategorias() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al eliminar');
+      // Re-throw so callers (UI) can show context-specific error messages
+      throw err;
     } finally {
       setLoading(false);
     }
   }, [load]);
 
-  return { items, loading, error, load, remove } as const;
+  return { items, invalid, loading, error, load, remove } as const;
 }
