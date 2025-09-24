@@ -1,28 +1,12 @@
-import { useState, useEffect } from 'react';
-import { listProductos } from '../../infrastructure/api/ProductoApi';
-import type { Producto } from '../../domain/entities';
+import { useEffect } from 'react';
+import { useProductos } from '../hooks/useProductos';
 
 const ProductoList = () => {
-  const [productos, setProductos] = useState<Producto[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { items: productos, loading, error, load, remove } = useProductos();
 
   useEffect(() => {
-    const fetch = async () => {
-      try {
-        const data = await listProductos();
-        // Debug: log mapped domain data
-        // eslint-disable-next-line no-console
-        console.debug('listProductos -> mapped', data);
-        setProductos(data);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Error desconocido');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetch();
-  }, []);
+    load();
+  }, [load]);
 
   if (loading) return <div className="p-4">Cargando productos...</div>;
   if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
@@ -43,7 +27,19 @@ const ProductoList = () => {
               <div className="mt-2 text-sm text-gray-700">Precio: {p.precio}</div>
               <div className="mt-4 flex space-x-2">
                 <button className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">Editar</button>
-                <button className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600">Eliminar</button>
+                <button
+                  onClick={async () => {
+                    if (!confirm('¿Eliminar este producto?')) return;
+                    try {
+                      await remove(p.id_producto);
+                    } catch (err) {
+                      alert(err instanceof Error ? err.message : 'Error al eliminar');
+                    }
+                  }}
+                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                >
+                  Eliminar
+                </button>
               </div>
             </div>
           ))}

@@ -1,10 +1,10 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Layout from './presentation/Layout';
-import CategoriasPage from './presentation/pages/CategoriasPage';
-import Home from './presentation/pages/Home';
+import { Layout } from './presentation/core';
+import { CategoriasPage, CategoriasCreatePage, CategoriasEditPage } from './presentation/modules/categorias';
+import Home from './presentation/pages/home/index';
 import './App.css';
-import ProductosPage from './presentation/pages/ProductosPage';
-import ClientesPage from './presentation/pages/ClientesPage';
+import { ProductosPage } from './presentation/modules/producto';
+import { ClientesPage } from './presentation/modules/clientes';
 
 // Placeholder components (reemplaza con tus componentes reales)
 const Productos = () => <ProductosPage />;
@@ -19,6 +19,8 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/categorias" element={<CategoriasPage />} />
+          <Route path="/categorias/create" element={<CategoriasCreatePage />} />
+          <Route path="/categorias/:id/edit" element={<CategoriasEditPage />} />
           <Route path="/productos" element={<Productos />} />
           <Route path="/ordenes" element={<Ordenes />} />
           <Route path="/clientes" element={<Clientes />} />
