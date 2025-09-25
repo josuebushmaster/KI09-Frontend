@@ -4,7 +4,7 @@ import { CategoriasPage, CategoriasCreatePage, CategoriasEditPage } from './pres
 import Home from './presentation/pages/home/index';
 import './App.css';
 import { ProductosPage } from './presentation/modules/producto';
-import { ClientesPage } from './presentation/modules/clientes';
+import { ClientesPage, ClienteCreatePage, ClienteEditPage } from './presentation/modules/clientes';
 
 // Placeholder components (reemplaza con tus componentes reales)
 const Productos = () => <ProductosPage />;
@@ -25,6 +25,8 @@ function App() {
             <Route path="/productos" element={<Productos />} />
             <Route path="/ordenes" element={<Ordenes />} />
             <Route path="/clientes" element={<Clientes />} />
+            <Route path="/clientes/create" element={<ClienteCreatePage />} />
+            <Route path="/clientes/:id/edit" element={<ClienteEditPage />} />
             <Route path="/ventas" element={<Ventas />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
