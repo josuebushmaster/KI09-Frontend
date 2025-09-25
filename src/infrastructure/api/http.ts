@@ -1,6 +1,7 @@
 import axios from "axios";
 import type { AxiosResponse } from "axios";
 import { API_URL, DEV_API_PREFIX, getAuthToken } from "../../config/api";
+import { pushGlobalLoading, popGlobalLoading } from "../../shared/globalLoadingBus";
 
 type HttpMethod = "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
 
@@ -55,6 +56,7 @@ export async function http<T = unknown>(
 
   // Debug: log outgoing request (temporary)
   // Use VITE_DEBUG_API=true in .env to enable in production if desired
+  pushGlobalLoading();
   try {
     if (import.meta.env && import.meta.env.VITE_DEBUG_API === "true") {
       console.debug("HTTP request:", { method, url, headers, body });
@@ -139,5 +141,7 @@ export async function http<T = unknown>(
       throw httpError;
     }
     throw err;
+  } finally {
+    popGlobalLoading();
   }
 }

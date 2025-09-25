@@ -5,6 +5,7 @@ export { default as Layout } from './Layout';
 export { default as ConfirmModal } from './components/ConfirmModal';
 export { default as StatusModal } from './components/StatusModal';
 export { default as Loading } from './components/Loading';
+export { default as GlobalLoadingBar } from './components/GlobalLoadingBar';
 
 // Providers
 export { StatusProvider } from './status';
