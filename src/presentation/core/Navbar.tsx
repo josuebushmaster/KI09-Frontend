@@ -1,5 +1,8 @@
 import { useState, useEffect, type Dispatch, type SetStateAction } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { listCategorias } from '../modules/categorias/services/categoriasService';
+import { listClientes } from '../modules/clientes/services/clientesService';
+import type { Categoria, Cliente } from '../../domain/entities';
 import type { ReactElement } from 'react';
 
 interface NavItem {
@@ -19,8 +22,16 @@ interface NavbarProps {
 }
 const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  // Buscador global
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  interface SearchHit { type: 'categoria' | 'cliente'; id: number; nombre: string }
+  const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
+  const [showSearchPanel, setShowSearchPanel] = useState(false);
+  const MIN_LEN = 2;
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -35,6 +46,47 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
   }, [setIsCollapsed]);
+
+  // Búsqueda (debounce simple)
+  useEffect(() => {
+    let active = true;
+    if (searchQuery.trim().length < MIN_LEN) {
+      setSearchResults([]);
+      return; // No dispara búsqueda
+    }
+    setSearchLoading(true);
+    const handle = setTimeout(async () => {
+      try {
+        const q = searchQuery.trim().toLowerCase();
+        const [cats, clients] = await Promise.allSettled([listCategorias(), listClientes()]);
+        if (!active) return;
+        const catData: Categoria[] = cats.status === 'fulfilled' ? cats.value : [];
+        const cliData: Cliente[] = clients.status === 'fulfilled' ? clients.value : [];
+        const filteredCats: SearchHit[] = catData
+          .filter(c => c?.nombre?.toLowerCase().includes(q))
+          .slice(0, 5)
+          .map(c => ({ type: 'categoria', id: Number(c.id_categoria), nombre: c.nombre }));
+        const filteredClients: SearchHit[] = cliData
+          .filter(c => c?.nombre?.toLowerCase().includes(q))
+          .slice(0, 5)
+          .map(c => ({ type: 'cliente', id: Number(c.id_cliente), nombre: c.nombre }));
+        setSearchResults([...filteredCats, ...filteredClients]);
+      } catch {
+        if (active) setSearchResults([]);
+      } finally {
+        if (active) setSearchLoading(false);
+      }
+    }, 300);
+    return () => { active = false; clearTimeout(handle); };
+  }, [searchQuery]);
+
+  const handleNavigateResult = (r: { type: 'categoria' | 'cliente'; id: number; nombre: string }) => {
+    if (!r.id || !Number.isFinite(r.id)) return;
+    const path = r.type === 'categoria' ? `/categorias/${r.id}/edit` : `/clientes/${r.id}/edit`;
+    navigate(path);
+    setShowSearchPanel(false);
+    setSearchQuery('');
+  };
 
   const navSections: NavSection[] = [
     {
@@ -166,27 +218,99 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
         {/* Desktop Header */}
         {!isMobile && (
           <div className="p-4 border-b border-gray-800">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
-                  </svg>
+            {isCollapsed ? (
+              <div className="flex flex-col items-center gap-3">
+                <div className="flex items-center space-x-2">
+                  <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                    </svg>
+                  </div>
                 </div>
-                {!isCollapsed && (
-                  <span className="text-white font-semibold text-lg">KI09</span>
-                )}
+                <button
+                  onClick={() => setIsCollapsed(!isCollapsed)}
+                  className="p-2 text-gray-400 hover:text-white hover:bg-gray-800 rounded-md transition"
+                  title={isCollapsed ? "Expandir menú" : "Contraer menú"}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d={isCollapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"} />
+                  </svg>
+                </button>
               </div>
-              <button
-                onClick={() => setIsCollapsed(!isCollapsed)}
-                className="p-1 text-gray-400 hover:text-white transition-colors"
-                title={isCollapsed ? "Expandir menú" : "Contraer menú"}
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d={isCollapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"} />
-                </svg>
-              </button>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                      <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                      </svg>
+                    </div>
+                    <span className="text-white font-semibold text-lg">KI09</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setIsCollapsed(!isCollapsed)}
+                      className="p-1 text-gray-400 hover:text-white transition-colors"
+                      title={isCollapsed ? "Expandir menú" : "Contraer menú"}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d={isCollapsed ? "M9 5l7 7-7 7" : "M15 19l-7-7 7-7"} />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+                {/* Buscador (solo visible cuando expandido) */}
+                <div className="relative group">
+                  <input
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setShowSearchPanel(true); }}
+                    placeholder="Buscar categorías o clientes..."
+                    className="w-full rounded-lg bg-gray-800/70 border border-gray-700 px-9 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
+                  />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+                  </span>
+                  {searchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => { setSearchQuery(''); setSearchResults([]); }}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                      title="Limpiar"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                  )}
+                  {showSearchPanel && (searchQuery.length >= MIN_LEN) && (
+                    <div className="absolute z-50 mt-2 left-0 right-0 rounded-xl border border-gray-700 bg-gray-900/95 backdrop-blur shadow-lg max-h-80 overflow-auto">
+                      <div className="p-2 text-[11px] uppercase tracking-wider text-gray-500 flex items-center justify-between">
+                        <span>Resultados</span>
+                        {searchLoading && <span className="animate-pulse text-gray-400">Buscando…</span>}
+                      </div>
+                      {(!searchLoading && searchResults.length === 0) && (
+                        <div className="px-4 py-6 text-center text-xs text-gray-500">Sin coincidencias</div>
+                      )}
+                      <ul className="divide-y divide-gray-800">
+                        {searchResults.map(r => (
+                          <li key={r.type + r.id}>
+                            <button
+                              type="button"
+                              onClick={() => handleNavigateResult(r)}
+                              className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-800/80 focus:bg-gray-800/80 focus:outline-none group"
+                            >
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${r.type === 'categoria' ? 'border-blue-400/40 text-blue-300 bg-blue-400/10' : 'border-emerald-400/40 text-emerald-300 bg-emerald-400/10'}`}>{r.type}</span>
+                              <span className="text-sm text-gray-200 flex-1 truncate group-hover:text-white">{r.nombre}</span>
+                              <svg className="w-4 h-4 text-gray-500 group-hover:text-gray-300" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="p-2 text-[10px] text-gray-600 text-center">Escribe al menos {MIN_LEN} caracteres</div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
