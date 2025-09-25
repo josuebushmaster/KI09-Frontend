@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import CategoriaForm from '../components/CategoriaForm';
 import { getCategoria, updateCategoria } from '../services/categoriasService';
 import type { Categoria } from '../../../../domain/entities';
+import FormPageLayout from '../../shared/FormPageLayout';
 
 const CategoriasEditPage = () => {
   const { id } = useParams();
@@ -41,10 +42,13 @@ const CategoriasEditPage = () => {
   if (!categoria) return <div className="p-4 text-red-500">Categoría no encontrada</div>;
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Editar Categoría</h1>
+    <FormPageLayout
+      title="Editar Categoría"
+      subtitle="Ajusta los datos de la categoría y guarda los cambios."
+      backTo="/categorias"
+    >
       <CategoriaForm initial={categoria} onSubmit={handleSubmit} submitLabel="Actualizar" />
-    </div>
+    </FormPageLayout>
   );
 };
 

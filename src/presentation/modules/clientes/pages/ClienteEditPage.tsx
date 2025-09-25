@@ -4,6 +4,7 @@ import ClienteForm, { type ClienteFormValues } from '../components/ClienteForm';
 import * as service from '../services/clientesService';
 import type { Cliente } from '../../../../domain/entities';
 import { useStatus } from '../../../core';
+import FormPageLayout from '../../shared/FormPageLayout';
 
 export default function ClienteEditPage() {
   const { id } = useParams();
@@ -46,8 +47,12 @@ export default function ClienteEditPage() {
   if (!cliente) return <div className="p-6 text-gray-600">No se encontró el cliente.</div>;
 
   return (
-    <div className="p-6 lg:p-10">
+    <FormPageLayout
+      title="Editar Cliente"
+      subtitle="Modifica los datos del cliente y confirma para guardar."
+      backTo="/clientes"
+    >
       <ClienteForm initial={cliente} onSubmit={handleSubmit} submitLabel="Guardar cambios" />
-    </div>
+    </FormPageLayout>
   );
 }

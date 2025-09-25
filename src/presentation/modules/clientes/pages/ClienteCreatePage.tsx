@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import ClienteForm, { type ClienteFormValues } from '../components/ClienteForm';
 import * as service from '../services/clientesService';
 import { useStatus } from '../../../core';
+import FormPageLayout from '../../shared/FormPageLayout';
 
 export default function ClienteCreatePage() {
   const navigate = useNavigate();
@@ -14,8 +15,12 @@ export default function ClienteCreatePage() {
   };
 
   return (
-    <div className="p-6 lg:p-10">
+    <FormPageLayout
+      title="Crear Cliente"
+      subtitle="Registra un nuevo cliente completando los campos disponibles."
+      backTo="/clientes"
+    >
       <ClienteForm onSubmit={handleSubmit} submitLabel="Crear" />
-    </div>
+    </FormPageLayout>
   );
 }

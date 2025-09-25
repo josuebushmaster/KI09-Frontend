@@ -3,6 +3,7 @@ import CategoriaForm from '../components/CategoriaForm';
 import { createCategoria } from '../services/categoriasService';
 import type { Categoria } from '../../../../domain/entities';
 import { useStatus } from '../../../core';
+import FormPageLayout from '../../shared/FormPageLayout';
 
 const CategoriasCreatePage = () => {
   const navigate = useNavigate();
@@ -30,10 +31,13 @@ const CategoriasCreatePage = () => {
   };
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Crear Categoría</h1>
+    <FormPageLayout
+      title="Crear Categoría"
+      subtitle="Completa la información para registrar una nueva categoría del catálogo."
+      backTo="/categorias"
+    >
       <CategoriaForm onSubmit={handleSubmit} submitLabel="Crear" />
-    </div>
+    </FormPageLayout>
   );
 };
 
