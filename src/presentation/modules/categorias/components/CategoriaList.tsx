@@ -117,7 +117,7 @@ const CategoriaList = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 lg:p-8 space-y-8 relative">
+    <div className="max-w-7xl mx-auto px-6 pb-6 lg:px-8 lg:pb-8 space-y-8 relative">
       {selected.size > 0 && (
         <div className="sticky top-2 z-30 mb-2 animate-fade-in">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-red-200/60 bg-gradient-to-br from-red-50 to-red-100/60 backdrop-blur px-5 py-4 shadow-sm">

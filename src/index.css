@@ -1,12 +1,1 @@
 @import "tailwindcss";
-
-@keyframes global-loading-bar {
-	0% { transform: translateX(-40%); }
-	50% { transform: translateX(0%); }
-	100% { transform: translateX(60%); }
-}
-
-.animate-global-loading-bar {
-	animation: global-loading-bar 1.1s ease-in-out infinite;
-	background-size: 200% 100%;
-}

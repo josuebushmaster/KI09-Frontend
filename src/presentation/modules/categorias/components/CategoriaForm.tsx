@@ -57,16 +57,15 @@ export default function CategoriaForm({ initial = {}, onSubmit, submitLabel = 'G
   };
 
   return (
-    <div className="relative max-w-xl mx-auto">
-      {/* Contorno degradado */}
-      <div className="absolute -inset-0.5 rounded-2xl bg-gradient-to-br from-red-700/40 via-red-800/30 to-red-900/50 blur-sm opacity-70" aria-hidden="true" />
+    <div className="relative max-w-lg mx-auto">
+      <div className="absolute -inset-0.5 rounded-xl bg-gradient-to-br from-red-700/40 via-red-800/30 to-red-900/50 blur-sm opacity-60" aria-hidden="true" />
       <form
         onSubmit={handleSubmit}
-        className="relative rounded-2xl bg-white/95 backdrop-blur-xl border border-gray-200 shadow-xl px-8 py-8 space-y-8 overflow-hidden"
+        className="relative rounded-xl bg-white/95 backdrop-blur-xl border border-gray-200 shadow-lg px-6 py-6 space-y-6 overflow-hidden"
       >
         <div className="pointer-events-none absolute inset-0 rounded-2xl bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.9),rgba(255,255,255,0))]" aria-hidden />
 
-        <header className="space-y-2 relative z-10">
+  <header className="space-y-1.5 relative z-10">
           <div className={subtleBadge}>
             {initial?.id_categoria ? 'Edición' : 'Nueva'} categoría
           </div>
@@ -114,7 +113,7 @@ export default function CategoriaForm({ initial = {}, onSubmit, submitLabel = 'G
         </div>
 
         {/* Descripción con contador y barra de progreso */}
-        <div className="space-y-2">
+  <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label htmlFor="categoria-descripcion" className="text-[11px] font-semibold uppercase tracking-wider text-gray-600">Descripción (opcional)</label>
             <span className={`text-[11px] font-semibold tabular-nums ${nearLimit ? 'text-amber-600' : 'text-gray-400'}`}>{descLength}/{MAX_DESC}</span>
@@ -161,7 +160,7 @@ export default function CategoriaForm({ initial = {}, onSubmit, submitLabel = 'G
         )}
 
         {/* Acciones */}
-        <div className="flex flex-col sm:flex-row sm:justify-end gap-3 pt-2">
+  <div className="flex flex-col sm:flex-row sm:justify-end gap-2 pt-1">
           {!readonly && (
           <button
             type="button"
