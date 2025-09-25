@@ -27,6 +27,7 @@ export function useClientes() {
       await load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al eliminar');
+      throw err; // Re-lanzar para que el componente pueda manejar el error
     } finally {
       setLoading(false);
     }

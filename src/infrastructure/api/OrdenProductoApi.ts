@@ -2,7 +2,6 @@ import { http } from './http';
 import type { OrdenProducto } from '../../domain/entities';
 
 type ApiOrdenProducto = {
-  _id_ordenProd?: number;
   id_ordenProd?: number;
   id_orden?: number;
   id_producto?: number;
@@ -14,7 +13,7 @@ type ApiOrdenProducto = {
 
 function toDomain(api: ApiOrdenProducto): OrdenProducto {
   return {
-    id_ordenProd: api._id_ordenProd ?? api.id_ordenProd ?? 0,
+    id_ordenProd: api.id_ordenProd ?? 0,
     id_orden: api.id_orden ?? 0,
     id_producto: api.id_producto ?? 0,
     cantidad: api.cantidad ?? 0,

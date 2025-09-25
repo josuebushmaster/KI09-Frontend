@@ -2,7 +2,6 @@ import { http } from './http';
 import type { Venta } from '../../domain/entities';
 
 type ApiVenta = {
-  _id_venta?: number;
   id_venta?: number;
   id_orden?: number;
   total?: number;
@@ -12,7 +11,7 @@ type ApiVenta = {
 
 function toDomain(api: ApiVenta): Venta {
   return {
-    id_venta: api._id_venta ?? api.id_venta ?? 0,
+    id_venta: api.id_venta ?? 0,
     id_orden: api.id_orden,
     total: api.total,
     created_at: api.created_at,

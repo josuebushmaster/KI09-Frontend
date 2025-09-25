@@ -70,6 +70,44 @@ export async function http<T = unknown>(
   }
 
   try {
+    // Log específico para debugging de creación de categorías (temporal)
+    try {
+      if (String(config.url).includes('/categorias') && String(config.method).toUpperCase() === 'POST') {
+        console.log('🔍 HTTP DEBUG - POST a /categorias - body:', config.data);
+      }
+    } catch {
+      // ignore logging errors
+    }
+
+    // Limpieza del body: eliminar claves tipo ID (inline)
+    try {
+      const methodUp = String(config.method).toUpperCase();
+      if (methodUp === 'POST' || methodUp === 'PUT' || methodUp === 'PATCH') {
+        const bodyObj = config.data as Record<string, unknown> | undefined;
+        if (bodyObj && typeof bodyObj === 'object' && !(bodyObj instanceof FormData)) {
+          const out = { ...bodyObj } as Record<string, unknown>;
+          const idPattern = /(^id$|id_|_id$|idCategoria|idcategoria)/i;
+          const removed: string[] = [];
+          for (const k of Object.keys(out)) {
+            if (idPattern.test(k)) {
+              removed.push(k);
+              delete out[k];
+            }
+          }
+          if (removed.length > 0) {
+            try {
+              console.warn('🧹 http: se eliminaron claves tipo ID antes de enviar:', removed, bodyObj);
+            } catch {
+              /* ignore logging errors */
+            }
+            config.data = out;
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+
     const response = await axios(config);
     return parseResponse(response);
   } catch (err) {

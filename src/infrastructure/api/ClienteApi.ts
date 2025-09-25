@@ -2,7 +2,6 @@ import { http } from './http';
 import type { Cliente } from '../../domain/entities';
 
 type ApiCliente = {
-  _id_cliente?: number;
   id_cliente?: number;
   nombre?: string;
   nombre_cliente?: string;
@@ -13,10 +12,15 @@ type ApiCliente = {
   updated_at?: string;
 };
 
-function toDomain(api: ApiCliente): Cliente {
+function toDomain(api: ApiCliente): Cliente | null {
+  const rawId = api.id_cliente ?? api.id_cliente;
+  if (rawId === undefined || rawId === null) return null;
+  const id = Number(rawId);
+  if (!Number.isFinite(id)) return null;
+
   return {
-    id_cliente: api._id_cliente ?? api.id_cliente ?? 0,
-    nombre: api.nombre_cliente ?? api.nombre ?? '',
+    id_cliente: id,
+    nombre: String(api.nombre_cliente ?? api.nombre ?? '').trim(),
     email: api.email,
     telefono: api.telefono,
     direccion: api.direccion,
@@ -36,24 +40,35 @@ function toApi(payload: Partial<Cliente>): Partial<ApiCliente> {
 
 export async function listClientes(): Promise<Cliente[]> {
   const data = await http<ApiCliente[]>('clientes/');
-  return Array.isArray(data) ? data.map(toDomain) : [];
+  if (!Array.isArray(data)) return [];
+  const mapped = data.map(toDomain).filter((x): x is Cliente => x !== null);
+  if (mapped.length !== data.length) {
+    console.warn('Algunos clientes devueltos por la API no tenían id_cliente válido y fueron ignorados', data);
+  }
+  return mapped;
 }
 
 export async function getCliente(id: number): Promise<Cliente> {
   const data = await http<ApiCliente>(`clientes/${id}`);
-  return toDomain(data);
+  const dom = toDomain(data);
+  if (!dom) throw new Error('La API devolvió un cliente sin id_cliente válido');
+  return dom;
 }
 
 export async function createCliente(payload: Partial<Cliente>): Promise<Cliente> {
   const apiPayload = toApi(payload);
   const data = await http<ApiCliente>('clientes/', 'POST', apiPayload);
-  return toDomain(data);
+  const dom = toDomain(data);
+  if (!dom) throw new Error('La API devolvió un cliente creado sin id_cliente válido');
+  return dom;
 }
 
 export async function updateCliente(id: number, payload: Partial<Cliente>): Promise<Cliente> {
   const apiPayload = toApi(payload);
   const data = await http<ApiCliente>(`clientes/${id}`, 'PUT', apiPayload);
-  return toDomain(data);
+  const dom = toDomain(data);
+  if (!dom) throw new Error('La API devolvió un cliente actualizado sin id_cliente válido');
+  return dom;
 }
 
 export async function deleteCliente(id: number): Promise<void> {

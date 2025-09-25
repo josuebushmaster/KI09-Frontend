@@ -2,7 +2,6 @@ import { http } from './http';
 import type { Producto } from '../../domain/entities';
 
 type ApiProducto = {
-  _id_producto?: number;
   id_producto?: number;
   nombre_producto?: string;
   nombre?: string;
@@ -18,10 +17,15 @@ type ApiProducto = {
   updated_at?: string;
 };
 
-function toDomain(api: ApiProducto): Producto {
+function toDomain(api: ApiProducto): Producto | null {
+  const rawId = api.id_producto;
+  if (rawId === undefined || rawId === null) return null;
+  const id = Number(rawId);
+  if (!Number.isFinite(id)) return null;
+
   return {
-    id_producto: api._id_producto ?? api.id_producto ?? 0,
-    nombre: api.nombre_producto ?? api.nombre ?? '',
+    id_producto: id,
+    nombre: String(api.nombre_producto ?? api.nombre ?? '').trim(),
     descripcion: api.descripcion ?? api.descripcion_producto ?? null,
     precio: api.precio ?? api.precio_producto ?? 0,
     stock: api.stock ?? api.existencia,
@@ -43,35 +47,35 @@ function toApi(payload: Partial<Producto>): Partial<ApiProducto> {
 
 export async function listProductos(): Promise<Producto[]> {
   const data = await http<ApiProducto[]>('productos/');
-  // Debug in dev: log raw API response and mapped domain data
-  try {
-    if (import.meta.env && import.meta.env.DEV) {
-      // eslint-disable-next-line no-console
-      console.debug('ProductoApi.raw', data);
-      // eslint-disable-next-line no-console
-      console.debug('ProductoApi.mapped', Array.isArray(data) ? data.map(toDomain) : []);
-    }
-  } catch (e) {
-    // ignore
+  if (!Array.isArray(data)) return [];
+  const mapped = data.map(toDomain).filter((x): x is Producto => x !== null);
+  if (mapped.length !== data.length) {
+    console.warn('Algunos productos devueltos por la API no tenían id_producto válido y fueron ignorados', data);
   }
-  return Array.isArray(data) ? data.map(toDomain) : [];
+  return mapped;
 }
 
 export async function getProducto(id: number): Promise<Producto> {
   const data = await http<ApiProducto>(`productos/${id}`);
-  return toDomain(data);
+  const dom = toDomain(data);
+  if (!dom) throw new Error('La API devolvió un producto sin id_producto válido');
+  return dom;
 }
 
 export async function createProducto(payload: Partial<Producto>): Promise<Producto> {
   const apiPayload = toApi(payload);
   const data = await http<ApiProducto>('productos/', 'POST', apiPayload);
-  return toDomain(data);
+  const dom = toDomain(data);
+  if (!dom) throw new Error('La API devolvió un producto creado sin id_producto válido');
+  return dom;
 }
 
 export async function updateProducto(id: number, payload: Partial<Producto>): Promise<Producto> {
   const apiPayload = toApi(payload);
   const data = await http<ApiProducto>(`productos/${id}`, 'PUT', apiPayload);
-  return toDomain(data);
+  const dom = toDomain(data);
+  if (!dom) throw new Error('La API devolvió un producto actualizado sin id_producto válido');
+  return dom;
 }
 
 export async function deleteProducto(id: number): Promise<void> {

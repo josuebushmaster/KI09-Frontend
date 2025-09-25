@@ -3,7 +3,7 @@ import { LoadingContext } from './loadingContext';
 
 export const useLoading = () => {
   const ctx = useContext(LoadingContext);
-  if (!ctx) throw new Error('useLoading must be used within LoadingProvider');
+  if (!ctx) throw new Error('useLoading debe ser usado dentro de LoadingProvider');
   return ctx;
 };
 

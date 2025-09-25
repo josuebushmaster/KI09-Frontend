@@ -18,7 +18,12 @@ export default function CategoriaForm({ initial = {}, onSubmit, submitLabel = 'G
     setError(null);
     setSaving(true);
     try {
-      await onSubmit({ nombre: nombre.trim(), descripcion: descripcion.trim() || null });
+      const trimmedName = nombre.trim();
+      if (!trimmedName) {
+        setError('El nombre es obligatorio y no puede estar vacío o contener solo espacios.');
+        return;
+      }
+      await onSubmit({ nombre: trimmedName, descripcion: descripcion.trim() || null });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al guardar');
     } finally {
@@ -58,7 +63,7 @@ export default function CategoriaForm({ initial = {}, onSubmit, submitLabel = 'G
         <button
           type="submit"
           className="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 disabled:opacity-60"
-          disabled={saving}
+          disabled={saving || nombre.trim() === ''}
         >
           {saving ? 'Guardando...' : submitLabel}
         </button>
