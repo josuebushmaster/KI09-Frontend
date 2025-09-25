@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { Layout } from './presentation/core';
+import { Layout, ErrorBoundary, NotFoundPage } from './presentation/core';
 import { CategoriasPage, CategoriasCreatePage, CategoriasEditPage } from './presentation/modules/categorias';
 import Home from './presentation/pages/home/index';
 import './App.css';
@@ -16,16 +16,19 @@ function App() {
   return (
     <Router>
       <Layout>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/categorias" element={<CategoriasPage />} />
-          <Route path="/categorias/create" element={<CategoriasCreatePage />} />
-          <Route path="/categorias/:id/edit" element={<CategoriasEditPage />} />
-          <Route path="/productos" element={<Productos />} />
-          <Route path="/ordenes" element={<Ordenes />} />
-          <Route path="/clientes" element={<Clientes />} />
-          <Route path="/ventas" element={<Ventas />} />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/categorias" element={<CategoriasPage />} />
+            <Route path="/categorias/create" element={<CategoriasCreatePage />} />
+            <Route path="/categorias/:id/edit" element={<CategoriasEditPage />} />
+            <Route path="/productos" element={<Productos />} />
+            <Route path="/ordenes" element={<Ordenes />} />
+            <Route path="/clientes" element={<Clientes />} />
+            <Route path="/ventas" element={<Ventas />} />
+            <Route path="*" element={<NotFoundPage />} />
+          </Routes>
+        </ErrorBoundary>
       </Layout>
     </Router>
   );

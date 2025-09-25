@@ -18,3 +18,7 @@ export { useLoading } from './loading/useLoading';
 // Types
 export type { ShowOptions } from './status/statusContext';
 export type { LoadingOptions } from './loading/loadingContext';
+
+// Errors
+export { ErrorBoundary, ErrorPage } from './errors';
+export { NotFoundPage } from './errors';
