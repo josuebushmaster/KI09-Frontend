@@ -43,14 +43,19 @@ const CategoriaList = () => {
   }
 
   return (
-    <div className="p-4">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold">Lista de Categorías</h2>
-        <Link to="/categorias/create" className="bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700">Crear categoría</Link>
+    <div className="max-w-5xl mx-auto p-6 bg-white rounded-xl shadow-lg space-y-6">
+      <div className="flex flex-col sm:flex-row items-center justify-between">
+        <h2 className="text-2xl font-semibold text-gray-800">Gestión de Categorías</h2>
+        <Link to="/categorias/create" className="inline-flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 text-sm font-medium shadow">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />
+          </svg>
+          Crear categoría
+        </Link>
       </div>
       
       {/* Filtros */}
-      <div className="mb-4 bg-white/90 backdrop-blur-sm rounded-lg shadow-sm border border-gray-100 p-4">
+      <div className="mb-4 bg-gray-50 rounded-lg shadow-inner border border-gray-200 p-4">
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <div className="flex-1">
             <div className="relative">
@@ -130,21 +135,21 @@ const CategoriaList = () => {
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
+              <table className="min-w-full divide-y divide-gray-200 table-auto sm:table-fixed">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                    <th className="px-4 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                       N°
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Nombre
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="hidden sm:table-cell px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Descripción
                     </th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Acciones
                     </th>
                   </tr>
@@ -155,24 +160,24 @@ const CategoriaList = () => {
                     const valid = Number.isFinite(id);
                     return (
                       <tr key={String(categoria.id_categoria ?? Math.random())} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                        <td className="px-4 py-3 whitespace-nowrap text-center text-sm text-gray-600">
                           <div className="text-sm font-medium text-gray-500">
                             {index + 1}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-3 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
                             {categoria.nombre}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="hidden sm:table-cell px-4 py-3">
                           <div className="text-sm text-gray-600">
                             {categoria.descripcion && String(categoria.descripcion).trim()
                               ? categoria.descripcion
                               : <span className="italic text-gray-400">Sin descripción</span>}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-2">
                             <button
                               onClick={() => {
@@ -183,9 +188,11 @@ const CategoriaList = () => {
                                 }
                                 navigate(`/categorias/${id}/edit`);
                               }}
-                              className={`inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${!valid ? 'opacity-50 cursor-not-allowed' : ''}`}
-                              disabled={!valid}
+                              className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-white bg-blue-600 rounded hover:bg-blue-700 transition"
                             >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M11 17h2m-1-1V5" />
+                              </svg>
                               Editar
                             </button>
                             <button
@@ -197,8 +204,11 @@ const CategoriaList = () => {
                                 }
                                 setPendingDelete({ id, nombre: categoria.nombre });
                               }}
-                              className="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                              className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-white bg-red-600 rounded hover:bg-red-700 transition"
                             >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
                               Eliminar
                             </button>
                           </div>

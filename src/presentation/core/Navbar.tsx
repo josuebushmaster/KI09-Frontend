@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type Dispatch, type SetStateAction } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import type { ReactElement } from 'react';
 
@@ -13,9 +13,12 @@ interface NavSection {
   items: NavItem[];
 }
 
-const Navbar = () => {
+interface NavbarProps {
+  isCollapsed: boolean;
+  setIsCollapsed: Dispatch<SetStateAction<boolean>>;
+}
+const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
   const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -31,7 +34,7 @@ const Navbar = () => {
     checkScreenSize();
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
+  }, [setIsCollapsed]);
 
   const navSections: NavSection[] = [
     {
@@ -203,23 +206,19 @@ const Navbar = () => {
                       <Link
                         to={item.path}
                         onClick={() => isMobile && setMobileMenuOpen(false)}
+                        title={isCollapsed && !isMobile ? item.label : undefined}
                         className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
                           active
                             ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
                             : 'text-gray-300 hover:bg-gray-800 hover:text-white'
                         }`}
-                        title={(isCollapsed && !isMobile) ? item.label : undefined}
                       >
                         <span className={`flex-shrink-0 ${active ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
                           {item.icon}
                         </span>
-                        {(!isCollapsed || isMobile) && (
+                        {/* Mostrar etiqueta solo si el sidebar está expandido */}
+                        {!isCollapsed && (
                           <span className="ml-3 truncate">{item.label}</span>
-                        )}
-                        {(isCollapsed && !isMobile) && active && (
-                          <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap">
-                            {item.label}
-                          </div>
                         )}
                       </Link>
                     </li>

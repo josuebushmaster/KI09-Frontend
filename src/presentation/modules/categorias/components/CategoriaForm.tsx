@@ -42,18 +42,17 @@ export default function CategoriaForm({ initial = {}, onSubmit, submitLabel = 'G
   return (
     <form
       onSubmit={handleSubmit}
-      className="relative max-w-2xl w-full overflow-hidden rounded-xl bg-white/70 backdrop-blur shadow-sm border border-gray-200 p-6 md:p-8 transition-all"
+      className="max-w-lg w-full mx-auto bg-white rounded-lg shadow-lg border border-gray-200 p-6 space-y-6 transition-colors"
     >
       {/* Decorativo */}
       <div className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-white/60 via-white/40 to-white/10" />
       <div className="relative space-y-7">
         <header className="space-y-1">
-          <h2 className="text-xl font-semibold tracking-tight text-gray-800 flex items-center gap-2">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 text-sm font-bold shadow-inner">C</span>
-            {initial?.id_categoria ? 'Editar Categoría' : 'Crear Categoría'}
+          <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            {initial?.id_categoria ? '✏️ Editar Categoría' : '🆕 Crear Categoría'}
           </h2>
-          <p className="text-sm text-gray-500">
-            Completa los campos para {initial?.id_categoria ? 'actualizar' : 'registrar'} una categoría.
+          <p className="text-sm text-gray-600">
+            {initial?.id_categoria ? 'Actualiza los datos de la categoría.' : 'Completa los datos de la nueva categoría.'}
           </p>
         </header>
 
@@ -119,31 +118,34 @@ export default function CategoriaForm({ initial = {}, onSubmit, submitLabel = 'G
         </div>
 
         {/* Acciones */}
-        <div className="flex items-center gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row sm:justify-end gap-3 mt-4">
+          <button
+            type="button"
+            onClick={() => { setNombre(''); setDescripcion(''); setError(null); }}
+            className="flex items-center justify-center gap-1 px-4 py-2 text-sm font-medium text-gray-700 border border-gray-300 rounded-md hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582M20 20v-5h-.581M4 9a9 9 0 0113.446-3.414M20 15a9 9 0 00-13.446 3.414" />
+            </svg>
+            Reiniciar
+          </button>
           <button
             type="submit"
             disabled={saving || !trimmedName}
-            className="relative inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white shadow-md shadow-indigo-500/20 transition hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-300 disabled:cursor-not-allowed disabled:opacity-60"
+            className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-60 disabled:cursor-not-allowed transition"
           >
-            {saving && (
-              <span className="absolute left-3 inline-flex">
-                <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-                </svg>
-              </span>
+            {saving ? (
+              <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
             )}
-            <span className={saving ? 'pl-5' : ''}>{saving ? 'Guardando…' : submitLabel}</span>
+            {saving ? 'Guardando...' : submitLabel}
           </button>
-          {!saving && (
-            <button
-              type="button"
-              onClick={() => { setNombre(''); setDescripcion(''); setError(null); }}
-              className="text-xs font-medium text-gray-500 hover:text-indigo-600 transition"
-            >
-              Reiniciar
-            </button>
-          )}
         </div>
       </div>
     </form>

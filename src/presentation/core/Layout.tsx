@@ -8,6 +8,7 @@ interface LayoutProps {
 
 const Layout = ({ children }: LayoutProps) => {
   const [isMobile, setIsMobile] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   useEffect(() => {
     const checkScreenSize = () => {
@@ -20,9 +21,9 @@ const Layout = ({ children }: LayoutProps) => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <main className={`transition-all duration-300 ${isMobile ? 'ml-0' : 'ml-64'}`}>
+    <div className="min-h-screen bg-gray-50 flex">
+      <Navbar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+      <main className={`flex-1 transition-all duration-300 ${isMobile ? 'ml-0' : (isCollapsed ? 'ml-16' : 'ml-64')}`}>
         <div className={`p-6 ${isMobile ? 'pt-20' : ''}`}>
           {children}
         </div>
