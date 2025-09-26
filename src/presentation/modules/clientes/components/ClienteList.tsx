@@ -359,19 +359,16 @@ const ClienteList = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50/60">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3 min-w-[200px]">
                         Cliente
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4 min-w-[180px]">
                         Contacto
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3 min-w-[200px]">
                         Dirección
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        #
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Acciones
                       </th>
                     </tr>
@@ -379,28 +376,40 @@ const ClienteList = () => {
                   <tbody className="bg-white/30 divide-y divide-gray-200">
                     {filteredClientes.map((cliente) => (
                       <tr key={cliente.id_cliente} className="hover:bg-red-50/50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center mr-3">
+                        <td className="px-4 py-4">
+                          <div className="flex items-center min-w-0">
+                            <div className="w-8 h-8 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
                               <svg className="w-4 h-4 text-red-600" viewBox="0 0 20 20" fill="currentColor">
                                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                               </svg>
                             </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{cliente.nombre} {cliente.apellido}</div>
-                              <div className="text-sm text-gray-500">{cliente.edad ? `${cliente.edad} años` : 'Cliente'}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium text-gray-900 truncate">
+                                {cliente.nombre} {cliente.apellido}
+                              </div>
+                              <div className="text-sm text-gray-500">
+                                {cliente.edad ? `${cliente.edad} años` : 'Cliente'}
+                              </div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{cliente.email || 'Sin email'}</div>
-                          <div className="text-sm text-gray-500">{cliente.telefono || 'Sin teléfono'}</div>
+                        <td className="px-4 py-4">
+                          <div className="min-w-0">
+                            <div className="text-sm text-gray-900 truncate">
+                              {cliente.email || 'Sin email'}
+                            </div>
+                            <div className="text-sm text-gray-500 truncate">
+                              {cliente.telefono || 'Sin teléfono'}
+                            </div>
+                          </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 max-w-xs truncate">{cliente.direccion || 'Sin dirección'}</div>
+                        <td className="px-4 py-4">
+                          <div className="text-sm text-gray-900 max-w-xs truncate">
+                            {cliente.direccion || 'Sin dirección'}
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                          <div className="flex items-center justify-center gap-2">
+                        <td className="px-4 py-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
                             <Link
                               to={`/clientes/${cliente.id_cliente}/edit`}
                               className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-all"

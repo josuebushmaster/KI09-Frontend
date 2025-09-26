@@ -272,13 +272,16 @@ const CategoriaList = () => {
           {viewMode === 'cards' ? (
             // Vista de tarjetas
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredCategorias.map((categoria, index) => (
+              {filteredCategorias.map((categoria) => (
                 <div key={categoria.id_categoria} className="group relative bg-white/60 backdrop-blur rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:shadow-red-500/10 transition-all duration-300">
                   <div className="p-6">
                     <div className="flex items-start justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center">
-                          <span className="text-red-600 text-lg">📂</span>
+                          <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
+                          </svg>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -308,11 +311,12 @@ const CategoriaList = () => {
                         <p className="text-sm text-gray-500 mt-1 line-clamp-2">{categoria.descripcion || 'Sin descripción'}</p>
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                        <span className="text-xs text-gray-400">#{index + 1}</span>
+                        <div></div>
                         <div className="flex items-center gap-2">
                           <span className="inline-flex items-center gap-1 bg-red-50 text-red-700 px-2 py-1 rounded-full text-xs font-medium">
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
                             </svg>
                             Categoría
                           </span>
@@ -330,41 +334,46 @@ const CategoriaList = () => {
                 <table className="min-w-full divide-y divide-gray-200">
                   <thead className="bg-gray-50/60">
                     <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3 min-w-[200px]">
                         Categoría
                       </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/3 min-w-[250px]">
                         Descripción
                       </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        #
-                      </th>
-                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                         Acciones
                       </th>
                     </tr>
                   </thead>
                   <tbody className="bg-white/30 divide-y divide-gray-200">
-                    {filteredCategorias.map((categoria, index) => (
+                    {filteredCategorias.map((categoria) => (
                       <tr key={categoria.id_categoria} className="hover:bg-red-50/50 transition-colors">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center mr-3">
-                              <span className="text-red-600 text-sm">📂</span>
+                        <td className="px-4 py-4">
+                          <div className="flex items-center min-w-0">
+                            <div className="w-8 h-8 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center mr-3 flex-shrink-0">
+                              <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 6h.008v.008H6V6z" />
+                              </svg>
                             </div>
-                            <div>
-                              <div className="text-sm font-medium text-gray-900">{categoria.nombre}</div>
+                            <div className="min-w-0 flex-1">
+                              <div className="text-sm font-medium text-gray-900 truncate">
+                                {categoria.nombre}
+                              </div>
                             </div>
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <div className="text-sm text-gray-900 max-w-xs truncate">{categoria.descripcion || 'Sin descripción'}</div>
+                        <td className="px-4 py-4">
+                          <div className="min-w-0">
+                            <div className="text-sm text-gray-900 line-clamp-2">
+                              {categoria.descripcion || (
+                                <span className="text-gray-400 italic">Sin descripción</span>
+                              )}
+                            </div>
+                          </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center">
-                          <span className="text-xs text-gray-500">{index + 1}</span>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
-                          <div className="flex items-center justify-center gap-2">
+                        <td className="px-4 py-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
                             <Link
                               to={`/categorias/${categoria.id_categoria}/edit`}
                               className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-all"
