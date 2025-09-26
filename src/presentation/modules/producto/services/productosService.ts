@@ -9,11 +9,13 @@ export const deleteProducto = api.deleteProducto;
 export async function createProducto(payload: Partial<Producto>): Promise<Producto> {
   // Sanitizar payload para evitar enviar campos de id accidentalmente
   const sanitized: Partial<Producto> = {
-    nombre: payload.nombre,
+    nombre_producto: payload.nombre_producto,
     descripcion: payload.descripcion ?? null,
     precio: payload.precio,
+    costo: payload.costo,
     stock: payload.stock,
     id_categoria: payload.id_categoria,
+    imagen_url: payload.imagen_url,
   };
   return api.createProducto(sanitized);
 }

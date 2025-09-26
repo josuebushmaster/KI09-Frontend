@@ -1,10 +1,21 @@
 import { Link } from 'react-router-dom';
+import { useCategorias } from '../../modules/categorias/hooks/useCategorias';
+import { useProductos } from '../../modules/producto/hooks/useProductos';
+import { useClientes } from '../../modules/clientes/hooks/useClientes';
 
 const Home = () => {
+  const { items: categorias, loading: loadingCategorias } = useCategorias();
+  const { items: productos, loading: loadingProductos } = useProductos();
+  const { items: clientes, loading: loadingClientes } = useClientes();
+
+  const LoadingSpinner = () => (
+    <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-gray-800"></div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       {/* Hero Section */}
-  <section className="relative overflow-hidden bg-gradient-to-br from-red-700 via-red-800 to-red-900 text-white">
+  <section className="relative overflow-hidden bg-gradient-to-br from-red-700 via-red-800 to-red-900 text-white rounded-3xl mx-6 lg:mx-auto">
         <div className="absolute inset-0 bg-gradient-to-r from-black/20 to-transparent"></div>
         <div className="relative max-w-7xl mx-auto px-6 py-16 lg:py-24">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -74,10 +85,10 @@ const Home = () => {
           </div>
         </div>
       </section>
-      {/* Stats Cards */}
-      <section className="relative -mt-16 z-10 max-w-7xl mx-auto px-6">
+  {/* Stats Cards */}
+  <section className="relative -mt-16 z-10 max-w-7xl mx-auto px-6">
         <div className="grid md:grid-cols-3 gap-6">
-          <div className="group bg-white/95 backdrop-blur rounded-2xl shadow-xl border border-gray-200/50 p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+          <div className="group bg-white/95 backdrop-blur rounded-3xl shadow-xl border border-gray-200/50 p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-6">
               <div className="w-14 h-14 bg-gradient-to-br from-red-600 to-red-700 rounded-xl flex items-center justify-center text-white shadow-lg">
                 <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -94,7 +105,11 @@ const Home = () => {
             <div className="space-y-2">
               <h3 className="text-2xl font-bold text-gray-800">Categorías</h3>
               <div className="flex items-baseline gap-2">
-                <div className="text-3xl font-black text-gray-900">—</div>
+                {loadingCategorias ? (
+                  <LoadingSpinner />
+                ) : (
+                  <div className="text-3xl font-black text-gray-900">{categorias.length}</div>
+                )}
                 <div className="text-sm text-gray-500">Total registradas</div>
               </div>
                 <div className="w-full bg-gray-200 rounded-full h-2">
@@ -103,7 +118,7 @@ const Home = () => {
             </div>
           </div>
 
-          <div className="group bg-white/95 backdrop-blur rounded-2xl shadow-xl border border-gray-200/50 p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+          <div className="group bg-white/95 backdrop-blur rounded-3xl shadow-xl border border-gray-200/50 p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-6">
               <div className="w-14 h-14 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl flex items-center justify-center text-white shadow-lg">
                 <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -120,7 +135,11 @@ const Home = () => {
             <div className="space-y-2">
               <h3 className="text-2xl font-bold text-gray-800">Productos</h3>
               <div className="flex items-baseline gap-2">
-                <div className="text-3xl font-black text-gray-900">—</div>
+                {loadingProductos ? (
+                  <LoadingSpinner />
+                ) : (
+                  <div className="text-3xl font-black text-gray-900">{productos.length}</div>
+                )}
                 <div className="text-sm text-gray-500">En inventario</div>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -129,7 +148,7 @@ const Home = () => {
             </div>
           </div>
 
-          <div className="group bg-white/95 backdrop-blur rounded-2xl shadow-xl border border-gray-200/50 p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
+          <div className="group bg-white/95 backdrop-blur rounded-3xl shadow-xl border border-gray-200/50 p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
             <div className="flex items-center justify-between mb-6">
               <div className="w-14 h-14 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center text-white shadow-lg">
                 <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
@@ -194,8 +213,12 @@ const Home = () => {
                       </svg>
                     </div>
                     <div>
-                      <div className="text-sm text-gray-600">Clientes activos</div>
-                      <div className="text-2xl font-bold text-gray-800">1,247</div>
+                      <div className="text-sm text-gray-600">Clientes registrados</div>
+                      {loadingClientes ? (
+                        <LoadingSpinner />
+                      ) : (
+                        <div className="text-2xl font-bold text-gray-800">{clientes.length}</div>
+                      )}
                     </div>
                   </div>
                 </div>

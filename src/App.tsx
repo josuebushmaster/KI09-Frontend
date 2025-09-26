@@ -3,7 +3,7 @@ import { Layout, ErrorBoundary, NotFoundPage } from './presentation/core';
 import { CategoriasPage, CategoriasCreatePage, CategoriasEditPage } from './presentation/modules/categorias';
 import Home from './presentation/pages/home/index';
 import './App.css';
-import { ProductosPage } from './presentation/modules/producto';
+import { ProductosPage, ProductoCreatePage, ProductoEditPage } from './presentation/modules/producto';
 import { ClientesPage, ClienteCreatePage, ClienteEditPage } from './presentation/modules/clientes';
 
 // Placeholder components (reemplaza con tus componentes reales)
@@ -23,6 +23,8 @@ function App() {
             <Route path="/categorias/create" element={<CategoriasCreatePage />} />
             <Route path="/categorias/:id/edit" element={<CategoriasEditPage />} />
             <Route path="/productos" element={<Productos />} />
+            <Route path="/productos/create" element={<ProductoCreatePage />} />
+            <Route path="/productos/:id/edit" element={<ProductoEditPage />} />
             <Route path="/ordenes" element={<Ordenes />} />
             <Route path="/clientes" element={<Clientes />} />
             <Route path="/clientes/create" element={<ClienteCreatePage />} />

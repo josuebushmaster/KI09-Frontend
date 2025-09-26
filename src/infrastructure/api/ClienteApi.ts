@@ -8,6 +8,8 @@ type ApiCliente = {
   email?: string;
   telefono?: string;
   direccion?: string;
+  apellido?: string;
+  edad?: number;
   created_at?: string;
   updated_at?: string;
 };
@@ -18,7 +20,7 @@ function toDomain(api: ApiCliente): Cliente | null {
   const id = Number(rawId);
   if (!Number.isFinite(id)) return null;
 
-  return {
+  const domain: Cliente = {
     id_cliente: id,
     nombre: String(api.nombre_cliente ?? api.nombre ?? '').trim(),
     email: api.email,
@@ -26,7 +28,10 @@ function toDomain(api: ApiCliente): Cliente | null {
     direccion: api.direccion,
     created_at: api.created_at,
     updated_at: api.updated_at,
-  } as Cliente;
+  };
+  if (api.apellido !== undefined) domain.apellido = String(api.apellido).trim();
+  if (api.edad !== undefined && Number.isFinite(api.edad)) domain.edad = Number(api.edad);
+  return domain;
 }
 
 function toApi(payload: Partial<Cliente>): Partial<ApiCliente> {
@@ -35,6 +40,8 @@ function toApi(payload: Partial<Cliente>): Partial<ApiCliente> {
   if (payload.email !== undefined) out.email = payload.email;
   if (payload.telefono !== undefined) out.telefono = payload.telefono;
   if (payload.direccion !== undefined) out.direccion = payload.direccion;
+  if (payload.apellido !== undefined) out.apellido = payload.apellido;
+  if (payload.edad !== undefined) out.edad = payload.edad;
   return out;
 }
 

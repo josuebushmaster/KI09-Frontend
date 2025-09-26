@@ -10,6 +10,8 @@ export async function createCliente(payload: Partial<Cliente>): Promise<Cliente>
   // Sanitizar payload para evitar enviar campos de id accidentalmente
   const sanitized: Partial<Cliente> = {
     nombre: payload.nombre,
+    apellido: payload.apellido,
+    edad: payload.edad,
     email: payload.email,
     telefono: payload.telefono,
     direccion: payload.direccion,

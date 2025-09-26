@@ -2,7 +2,8 @@ import { useState, useEffect, type Dispatch, type SetStateAction } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { listCategorias } from '../modules/categorias/services/categoriasService';
 import { listClientes } from '../modules/clientes/services/clientesService';
-import type { Categoria, Cliente } from '../../domain/entities';
+import { listProductos } from '../modules/producto/services/productosService';
+import type { Categoria, Cliente, Producto } from '../../domain/entities';
 import type { ReactElement } from 'react';
 
 interface NavItem {
@@ -28,7 +29,7 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
   // Buscador global
   const [searchQuery, setSearchQuery] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
-  interface SearchHit { type: 'categoria' | 'cliente'; id: number; nombre: string }
+  interface SearchHit { type: 'categoria' | 'cliente' | 'producto'; id: number; nombre: string }
   const [searchResults, setSearchResults] = useState<SearchHit[]>([]);
   const [showSearchPanel, setShowSearchPanel] = useState(false);
   const MIN_LEN = 2;
@@ -58,19 +59,24 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
     const handle = setTimeout(async () => {
       try {
         const q = searchQuery.trim().toLowerCase();
-        const [cats, clients] = await Promise.allSettled([listCategorias(), listClientes()]);
+        const [cats, clients, products] = await Promise.allSettled([listCategorias(), listClientes(), listProductos()]);
         if (!active) return;
         const catData: Categoria[] = cats.status === 'fulfilled' ? cats.value : [];
         const cliData: Cliente[] = clients.status === 'fulfilled' ? clients.value : [];
+        const prodData: Producto[] = products.status === 'fulfilled' ? products.value : [];
         const filteredCats: SearchHit[] = catData
           .filter(c => c?.nombre?.toLowerCase().includes(q))
           .slice(0, 5)
           .map(c => ({ type: 'categoria', id: Number(c.id_categoria), nombre: c.nombre }));
         const filteredClients: SearchHit[] = cliData
-          .filter(c => c?.nombre?.toLowerCase().includes(q))
+          .filter(c => c?.nombre?.toLowerCase().includes(q) || c?.apellido?.toLowerCase().includes(q))
           .slice(0, 5)
-          .map(c => ({ type: 'cliente', id: Number(c.id_cliente), nombre: c.nombre }));
-        setSearchResults([...filteredCats, ...filteredClients]);
+          .map(c => ({ type: 'cliente', id: Number(c.id_cliente), nombre: c.apellido ? `${c.nombre} ${c.apellido}` : c.nombre }));
+        const filteredProducts: SearchHit[] = prodData
+          .filter(p => p?.nombre_producto?.toLowerCase().includes(q) || p?.descripcion?.toLowerCase().includes(q))
+          .slice(0, 5)
+          .map(p => ({ type: 'producto', id: Number(p.id_producto), nombre: p.nombre_producto || 'Sin nombre' }));
+        setSearchResults([...filteredCats, ...filteredClients, ...filteredProducts]);
       } catch {
         if (active) setSearchResults([]);
       } finally {
@@ -80,12 +86,18 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
     return () => { active = false; clearTimeout(handle); };
   }, [searchQuery]);
 
-  const handleNavigateResult = (r: { type: 'categoria' | 'cliente'; id: number; nombre: string }) => {
+  const handleNavigateResult = (r: { type: 'categoria' | 'cliente' | 'producto'; id: number; nombre: string }) => {
     if (!r.id || !Number.isFinite(r.id)) return;
-    const path = r.type === 'categoria' ? `/categorias/${r.id}/edit` : `/clientes/${r.id}/edit`;
-    navigate(path);
-    setShowSearchPanel(false);
-    setSearchQuery('');
+    let path = '';
+    if (r.type === 'categoria') path = `/categorias/${r.id}/edit`;
+    else if (r.type === 'cliente') path = `/clientes/${r.id}/edit`;
+    else if (r.type === 'producto') path = `/productos/${r.id}/edit`;
+    
+    if (path) {
+      navigate(path);
+      setShowSearchPanel(false);
+      setSearchQuery('');
+    }
   };
 
   const navSections: NavSection[] = [
@@ -265,7 +277,7 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
                   <input
                     value={searchQuery}
                     onChange={(e) => { setSearchQuery(e.target.value); setShowSearchPanel(true); }}
-                    placeholder="Buscar categorías o clientes..."
+                    placeholder="Buscar categorías, clientes o productos..."
                     className="w-full rounded-lg bg-gray-800/70 border border-gray-700 px-9 py-2 text-sm text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500"
                   />
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
@@ -298,7 +310,13 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
                               onClick={() => handleNavigateResult(r)}
                               className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-gray-800/80 focus:bg-gray-800/80 focus:outline-none group"
                             >
-                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${r.type === 'categoria' ? 'border-blue-400/40 text-blue-300 bg-blue-400/10' : 'border-emerald-400/40 text-emerald-300 bg-emerald-400/10'}`}>{r.type}</span>
+                              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md border ${
+                                r.type === 'categoria' ? 'border-red-400/40 text-red-300 bg-red-400/10' :
+                                r.type === 'cliente' ? 'border-blue-400/40 text-blue-300 bg-blue-400/10' :
+                                'border-orange-400/40 text-orange-300 bg-orange-400/10'
+                              }`}>
+                                {r.type === 'categoria' ? '📂 Cat' : r.type === 'cliente' ? '👤 Cli' : '📦 Prod'}
+                              </span>
                               <span className="text-sm text-gray-200 flex-1 truncate group-hover:text-white">{r.nombre}</span>
                               <svg className="w-4 h-4 text-gray-500 group-hover:text-gray-300" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
                             </button>

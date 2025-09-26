@@ -1,32 +1,31 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useCategorias } from '../hooks/useCategorias';
-import type { Categoria } from '../../../../domain/entities';
 import { ConfirmModal, useStatus } from '../../../core/';
 
 const CategoriaList = () => {
-  const { items: categorias, invalid, loading, error, load, remove } = useCategorias();
-  const navigate = useNavigate();
-  // confirmación mediante modal reutilizable
-  const [pendingDelete, setPendingDelete] = useState<{ mode: 'single' | 'bulk'; ids: number[]; nombre?: string } | null>(null);
-  const [deleting, setDeleting] = useState(false);
-  // menú compacto en móvil
-  const [openRowMenu, setOpenRowMenu] = useState<number | null>(null);
-  // selección masiva
-  const [selected, setSelected] = useState<Set<number>>(new Set());
-  const { show } = useStatus();
-  
-  // Estados para filtros
+  const { items: categorias, loading, error, load, remove } = useCategorias();
   const [searchTerm, setSearchTerm] = useState('');
+  const [pendingDelete, setPendingDelete] = useState<{ id: number; nombre?: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [viewMode, setViewMode] = useState<'cards' | 'list'>(() => {
+    const saved = localStorage.getItem('categorias-view-mode');
+    return saved === 'list' ? 'list' : 'cards';
+  });
+  const { show } = useStatus();
 
-  // load on mount
+  // Guardar preferencia de vista
+  const handleViewModeChange = (mode: 'cards' | 'list') => {
+    setViewMode(mode);
+    localStorage.setItem('categorias-view-mode', mode);
+  };
+
   useEffect(() => {
     load();
   }, [load]);
 
-  // Filtrar categorías basado en los criterios
-  const filteredCategorias = categorias.filter((categoria: Categoria) => {
-    // Filtro por término de búsqueda (nombre o descripción)
+  // Filtrar categorías basado en el término de búsqueda
+  const filteredCategorias = categorias.filter((categoria) => {
     const matchesSearch = searchTerm === '' || 
       categoria.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       categoria.descripcion?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -38,343 +37,373 @@ const CategoriaList = () => {
     setSearchTerm('');
   };
 
-  const toggleSelect = (id: number) => {
-    setSelected(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
-
-  const allVisibleIds = filteredCategorias
-    .map(c => Number(c.id_categoria))
-    .filter(id => Number.isFinite(id));
-
-  const allSelected = allVisibleIds.length > 0 && allVisibleIds.every(id => selected.has(id));
-
-  const toggleSelectAll = () => {
-    // No necesitamos el estado previo si vamos a seleccionar/deseleccionar todo directamente
-    setSelected(() => {
-      if (allSelected) return new Set();
-      return new Set(allVisibleIds);
-    });
-  };
-
-  const executeDeletion = async (ids: number[], mode: 'single' | 'bulk') => {
-    setDeleting(true);
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
     try {
-      for (const id of ids) {
-        await remove(id);
-      }
-      if (mode === 'bulk') {
-        setSelected(new Set());
-        show({ title: 'Eliminación masiva', message: `Se eliminaron ${ids.length} categorías.`, variant: 'success' });
-      } else {
-        show({ title: 'Categoría eliminada', message: 'La categoría se eliminó correctamente.', variant: 'success' });
-      }
+      setDeleting(true);
+      await remove(pendingDelete.id);
+      setPendingDelete(null);
+      show({ title: 'Categoría eliminada', message: 'La categoría se eliminó correctamente.', variant: 'success' });
     } catch (err) {
-      console.error('Delete error', err);
       const message = err instanceof Error ? err.message : String(err);
-      show({ title: mode === 'bulk' ? 'Error en eliminación masiva' : 'Error al eliminar', message, detail: err, variant: 'error' });
+      show({ title: 'Error al eliminar', message: `Error al eliminar: ${message}`, detail: err, variant: 'error' });
     } finally {
       setDeleting(false);
-      setPendingDelete(null);
     }
   };
 
-  if (loading) {
+  if (loading && categorias.length === 0) {
     return (
-      <div className="max-w-7xl mx-auto p-8">
-        <div className="relative rounded-2xl border border-gray-200/60 bg-white/70 backdrop-blur shadow-sm p-8 overflow-hidden">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,rgba(255,255,255,0.9),transparent_60%)]" />
-          <div className="flex items-center justify-between mb-8 relative z-10">
-            <div className="space-y-1">
-              <h2 className="text-2xl font-bold text-gray-800 tracking-tight">Gestión de Categorías</h2>
-              <p className="text-sm text-gray-500">Cargando datos…</p>
-            </div>
-            <div className="h-10 w-40 rounded-xl bg-gray-200/60 animate-pulse" />
-          </div>
-          <div className="space-y-4 relative z-10">
-            {[...Array(5)].map((_, i) => (
-              <div key={i} className="grid grid-cols-12 gap-4 items-center py-3 border-b border-gray-100 last:border-none">
-                <div className="h-4 w-6 bg-gray-200/70 rounded animate-pulse col-span-1" />
-                <div className="h-4 w-40 bg-gray-200/70 rounded animate-pulse col-span-3" />
-                <div className="h-4 w-full bg-gray-200/70 rounded animate-pulse col-span-5 hidden md:block" />
-                <div className="flex justify-end gap-2 col-span-3">
-                  <div className="h-8 w-16 bg-gray-200/70 rounded animate-pulse" />
-                  <div className="h-8 w-20 bg-gray-200/70 rounded animate-pulse" />
-                </div>
-              </div>
-            ))}
-          </div>
+      <div className="flex items-center justify-center h-64">
+        <div className="flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+          <p className="text-sm text-gray-500">Cargando categorías...</p>
         </div>
       </div>
     );
   }
 
   if (error) {
-    return <div className="p-4 text-red-500">Error: {error}</div>;
+    return (
+      <div className="text-center py-12">
+        <div className="text-red-600 mb-4">
+          <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">Error al cargar categorías</h3>
+        <p className="text-gray-600 mb-4">{error}</p>
+        <button
+          onClick={load}
+          className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582M20 20v-5h-.581M4 9a9 9 0 0113.446-3.414M20 15a9 9 0 00-13.446 3.414" />
+          </svg>
+          Reintentar
+        </button>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-6 pb-6 lg:px-8 lg:pb-8 space-y-8 relative">
-      {selected.size > 0 && (
-        <div className="sticky top-2 z-30 mb-2 animate-fade-in">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4 rounded-2xl border border-red-200/60 bg-gradient-to-br from-red-50 to-red-100/60 backdrop-blur px-5 py-4 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-red-600 to-red-700 text-white flex items-center justify-center text-xs font-bold shadow">{selected.size}</div>
-              <div className="text-sm font-medium text-red-900">Seleccionadas</div>
-            </div>
-            <div className="flex flex-wrap gap-2 ml-auto">
-              <button
-                disabled={deleting}
-                onClick={() => {
-                  if (selected.size === 0) return;
-                  setPendingDelete({ mode: 'bulk', ids: Array.from(selected) });
-                }}
-                className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500/40 disabled:opacity-50"
-              >
-                {deleting ? (
-                  <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 7h12m-9 4v6m6-6v6M9 7l1-3h4l1 3m-9 0h12l-1 12a2 2 0 01-2 2H8a2 2 0 01-2-2L5 7z" /></svg>
-                )}
-                Eliminar seleccionadas
-              </button>
-              <button
-                onClick={() => setSelected(new Set())}
-                className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white/70 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-red-400/30"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582M20 20v-5h-.581M4 9a9 9 0 0113.446-3.414M20 15a9 9 0 00-13.446 3.414" /></svg>
-                Cancelar
-              </button>
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* Header con título y controles */}
+      <div className="relative flex flex-col md:flex-row gap-6 md:items-center md:justify-between">
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold text-gray-800 tracking-tight flex items-center gap-2">
+            <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-red-600 to-red-700 text-white shadow">📂</span>
+            <span>Gestión de Categorías</span>
+          </h2>
+          <p className="text-sm text-gray-500">Organiza y administra las categorías de productos del sistema.</p>
         </div>
-      )}
-      {/* Header / Toolbar */}
-      <div className="relative rounded-2xl border border-gray-200/60 bg-white/80 backdrop-blur shadow-sm px-6 py-6 lg:py-7 overflow-hidden">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(255,255,255,0.9),transparent_60%)]" />
-        <div className="relative flex flex-col md:flex-row gap-6 md:items-center md:justify-between">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold text-gray-800 tracking-tight flex items-center gap-2">
-              <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-red-600 to-red-700 text-white shadow">📂</span>
-              <span>Gestión de Categorías</span>
-            </h2>
-            <p className="text-sm text-gray-500">Administra, busca y depura las categorías del catálogo.</p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            <div className="relative flex-1 min-w-[240px]">
-              <input
-                id="search"
-                type="text"
-                placeholder="Buscar nombre o descripción…"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 bg-white/60 backdrop-blur pl-11 pr-9 py-2.5 text-sm shadow-sm outline-none transition focus:ring-2 focus:ring-red-500/30 focus:border-red-600 placeholder:text-gray-400"
-              />
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
-              </span>
-              {searchTerm && (
-                <button
-                  type="button"
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  title="Limpiar"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-              )}
-            </div>
-            <div className="flex gap-2 justify-end">
-              {searchTerm && (
-                <button
-                  onClick={clearFilters}
-                  className="group inline-flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white/60 px-4 py-2 text-xs font-semibold text-gray-600 shadow-sm hover:bg-gray-100 hover:text-gray-700 transition"
-                >
-                  <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                  Limpiar
-                </button>
-              )}
-              <Link
-                to="/categorias/create"
-                className="inline-flex items-center gap-2 whitespace-nowrap rounded-xl bg-gradient-to-br from-red-600 to-red-700 px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-red-700/25 hover:from-red-600 hover:to-red-800 transition focus:outline-none focus:ring-2 focus:ring-red-500/40"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" /></svg>
-                Nueva
-              </Link>
-            </div>
-          </div>
-        </div>
-        {(searchTerm || filteredCategorias.length !== categorias.length) && (
-          <div className="mt-4 flex items-center justify-between text-[11px] font-medium text-gray-500">
-            <span>{filteredCategorias.length} de {categorias.length} categorías</span>
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          {/* Buscador */}
+          <div className="relative flex-1 min-w-[240px]">
+            <input
+              id="categorias-search"
+              type="text"
+              placeholder="Buscar nombre o descripción…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-xl border border-gray-300 bg-white/60 backdrop-blur pl-11 pr-9 py-2.5 text-sm shadow-sm outline-none transition focus:ring-2 focus:ring-red-500/30 focus:border-red-600 placeholder:text-gray-400"
+            />
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" /></svg>
+            </span>
             {searchTerm && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-semibold text-red-700 ring-1 ring-red-600/10">{searchTerm}</span>
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                title="Limpiar búsqueda"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
             )}
           </div>
-        )}
+          
+          {/* Controles de vista */}
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => handleViewModeChange('cards')}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition ${
+                viewMode === 'cards' 
+                  ? 'bg-white shadow-sm text-red-600' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+              title="Vista de tarjetas"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => handleViewModeChange('list')}
+              className={`inline-flex items-center justify-center w-8 h-8 rounded-md transition ${
+                viewMode === 'list' 
+                  ? 'bg-white shadow-sm text-red-600' 
+                  : 'text-gray-600 hover:text-gray-800'
+              }`}
+              title="Vista de lista"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+          
+          {/* Botón crear */}
+          <Link
+            to="/categorias/create"
+            className="inline-flex items-center justify-center gap-2 bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-4 py-2.5 rounded-xl font-semibold shadow-md shadow-red-600/25 transition group"
+          >
+            <svg className="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+            Nueva
+          </Link>
+        </div>
       </div>
 
-      {filteredCategorias.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-8 text-center">
-          {categorias.length === 0 ? (
-            <p className="text-gray-500">No hay categorías disponibles.</p>
-          ) : (
+      {/* Filtros activos */}
+      {searchTerm && (
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-500">Filtros activos:</span>
+          <span className="inline-flex items-center gap-1 bg-red-100 text-red-800 text-xs px-2 py-1 rounded-md">
+            Búsqueda: "{searchTerm}"
+            <button onClick={() => setSearchTerm('')} className="hover:text-red-900" title="Limpiar filtro">
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </span>
+          <button onClick={clearFilters} className="text-xs text-red-600 hover:text-red-700 font-medium">
+            Limpiar filtros
+          </button>
+        </div>
+      )}
+
+      {/* Estadísticas */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white/60 backdrop-blur rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-500 mb-2">No se encontraron categorías con los filtros aplicados.</p>
+              <p className="text-sm text-gray-600">Total categorías</p>
+              <p className="text-2xl font-bold text-gray-900">{categorias.length}</p>
+            </div>
+            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white/60 backdrop-blur rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Filtradas</p>
+              <p className="text-2xl font-bold text-gray-900">{filteredCategorias.length}</p>
+            </div>
+            <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3c2.755 0 5.455.232 8.083.678.533.09.917.556.917 1.096v1.044a2.25 2.25 0 01-.659 1.591l-5.432 5.432a2.25 2.25 0 00-.659 1.591v2.927a2.25 2.25 0 01-1.244 2.013L9.75 21v-6.568a2.25 2.25 0 00-.659-1.591L3.659 7.409A2.25 2.25 0 013 5.818V4.774c0-.54.384-1.006.917-1.096A48.32 48.32 0 0112 3z" />
+              </svg>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white/60 backdrop-blur rounded-xl border border-gray-200 p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Vista actual</p>
+              <p className="text-2xl font-bold text-gray-900 capitalize">{viewMode === 'cards' ? 'Tarjetas' : 'Lista'}</p>
+            </div>
+            <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+              <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                {viewMode === 'cards' ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                )}
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contenido principal */}
+      {filteredCategorias.length === 0 ? (
+        <div className="bg-white/60 backdrop-blur rounded-xl border border-gray-200 p-12 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-full flex items-center justify-center">
+            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          {categorias.length === 0 ? (
+            <>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No hay categorías disponibles</h3>
+              <p className="text-gray-500 mb-4">Comienza creando tu primera categoría para organizar los productos.</p>
+              <Link
+                to="/categorias/create"
+                className="inline-flex items-center gap-2 bg-gradient-to-br from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-4 py-2 rounded-lg transition"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Crear primera categoría
+              </Link>
+            </>
+          ) : (
+            <>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">No se encontraron categorías</h3>
+              <p className="text-gray-500 mb-4">No hay categorías que coincidan con los filtros aplicados.</p>
               <button
                 onClick={clearFilters}
-                className="text-indigo-600 hover:text-indigo-800 underline"
+                className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg transition"
               >
-                Limpiar filtros para ver todas las categorías
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582M20 20v-5h-.581M4 9a9 9 0 0113.446-3.414M20 15a9 9 0 00-13.446 3.414" />
+                </svg>
+                Limpiar filtros
               </button>
-            </div>
+            </>
           )}
         </div>
       ) : (
         <>
-          <div className="relative rounded-2xl border border-gray-200/70 overflow-hidden bg-white shadow-sm">
-            <div className="overflow-x-auto scrollbar-thin scrollbar-track-transparent scrollbar-thumb-gray-300/60 hover:scrollbar-thumb-gray-400/70">
-              <table className="min-w-full table-auto divide-y divide-gray-200">
-                <thead className="bg-gray-50/80 backdrop-blur">
-                  <tr className="text-[11px] uppercase tracking-wider text-gray-500">
-                    <th className="px-4 py-3 text-center font-semibold w-10">
-                      <input
-                        id="select-all"
-                        type="checkbox"
-                        checked={allSelected}
-                        onChange={toggleSelectAll}
-                        className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer"
-                        aria-label="Seleccionar todas"
-                      />
-                    </th>
-                    <th className="px-4 py-3 text-center font-semibold w-10">#</th>
-                    <th className="px-4 py-3 text-left font-semibold">Nombre</th>
-                    <th className="hidden md:table-cell px-4 py-3 text-left font-semibold">Descripción</th>
-                    <th className="px-4 py-3 text-right font-semibold w-40">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {filteredCategorias.map((categoria: Categoria, index: number) => {
-                    const id = Number(categoria.id_categoria);
-                    const valid = Number.isFinite(id);
-                    const hasDesc = categoria.descripcion && String(categoria.descripcion).trim();
-                    return (
-                      <tr key={String(categoria.id_categoria ?? Math.random())} className="group hover:bg-red-50/40 transition-colors">
-                        <td className="px-4 py-3 text-center align-middle">
-                          <input
-                            type="checkbox"
-                            className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500 cursor-pointer"
-                            checked={selected.has(id)}
-                            onChange={() => toggleSelect(id)}
-                            aria-label={`Seleccionar ${categoria.nombre}`}
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-center align-middle">
-                          <span className="text-xs font-semibold text-gray-500">{index + 1}</span>
-                        </td>
-                        <td className="px-4 py-3 align-middle">
-                          <div className="flex items-center gap-2">
-                            <span className="h-2 w-2 rounded-full bg-gradient-to-r from-red-600 to-red-700 opacity-0 group-hover:opacity-100 transition" />
-                            <span className="text-sm font-semibold text-gray-800 group-hover:text-gray-900">{categoria.nombre}</span>
+          {viewMode === 'cards' ? (
+            // Vista de tarjetas
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {filteredCategorias.map((categoria, index) => (
+                <div key={categoria.id_categoria} className="group relative bg-white/60 backdrop-blur rounded-xl border border-gray-200 overflow-hidden hover:shadow-lg hover:shadow-red-500/10 transition-all duration-300">
+                  <div className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center">
+                          <span className="text-red-600 text-lg">📂</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={`/categorias/${categoria.id_categoria}/edit`}
+                          className="opacity-0 group-hover:opacity-100 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-all"
+                          title="Editar categoría"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                          </svg>
+                        </Link>
+                        <button
+                          onClick={() => setPendingDelete({ id: Number(categoria.id_categoria), nombre: categoria.nombre })}
+                          className="opacity-0 group-hover:opacity-100 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-all"
+                          title="Eliminar categoría"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-3">
+                      <div>
+                        <h3 className="font-semibold text-gray-900 text-lg leading-tight">{categoria.nombre}</h3>
+                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">{categoria.descripcion || 'Sin descripción'}</p>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                        <span className="text-xs text-gray-400">#{index + 1}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center gap-1 bg-red-50 text-red-700 px-2 py-1 rounded-full text-xs font-medium">
+                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                            </svg>
+                            Categoría
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            // Vista de lista (tabla)
+            <div className="bg-white/60 backdrop-blur rounded-xl border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50/60">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Categoría
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Descripción
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        #
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Acciones
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white/30 divide-y divide-gray-200">
+                    {filteredCategorias.map((categoria, index) => (
+                      <tr key={categoria.id_categoria} className="hover:bg-red-50/50 transition-colors">
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 bg-gradient-to-br from-red-100 to-red-200 rounded-lg flex items-center justify-center mr-3">
+                              <span className="text-red-600 text-sm">📂</span>
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{categoria.nombre}</div>
+                            </div>
                           </div>
                         </td>
-                        <td className="hidden md:table-cell px-4 py-3 align-middle">
-                          {hasDesc ? (
-                            <p className="text-sm text-gray-600 line-clamp-2 max-w-prose">{categoria.descripcion}</p>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[11px] font-medium text-gray-500">Sin descripción</span>
-                          )}
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-900 max-w-xs truncate">{categoria.descripcion || 'Sin descripción'}</div>
                         </td>
-                        <td className="px-4 py-2.5 text-right align-middle">
-                          <div className="flex justify-end gap-1.5">
-                            <div className="hidden sm:flex items-center gap-1.5 bg-white/60 backdrop-blur-sm rounded-xl px-1.5 py-1 border border-gray-200 shadow-sm">
-                              <button
-                                aria-label="Editar"
-                                onClick={() => {
-                                  if (!valid) {
-                                    show({ title: 'ID inválido', message: 'ID inválido', variant: 'error' });
-                                    return;
-                                  }
-                                  navigate(`/categorias/${id}/edit`);
-                                }}
-                                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold text-gray-700 bg-gray-50/60 hover:bg-blue-50 hover:text-blue-700 border border-gray-200 hover:border-blue-300 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition"
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L8.478 18.174a4.5 4.5 0 01-1.897 1.128L4.125 20.25l.948-2.456a4.5 4.5 0 011.128-1.897L16.862 4.487z" /></svg>
-                                <span className="hidden md:inline">Editar</span>
-                              </button>
-                              <button
-                                aria-label="Eliminar"
-                                onClick={() => setPendingDelete({ mode: 'single', ids: [id], nombre: categoria.nombre })}
-                                className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[11px] font-semibold text-red-600 bg-red-50/70 hover:bg-red-600 hover:text-white border border-red-200 hover:border-red-500 shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500/30 transition"
-                              >
-                                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 7h12M9 7l1-3h4l1 3m1 0h-8l1 12a2 2 0 002 2h2a2 2 0 002-2l1-12zm-6 0h12" /></svg>
-                                <span className="hidden md:inline">Eliminar</span>
-                              </button>
-                            </div>
-                            <div className="relative sm:hidden">
-                              <button
-                                onClick={() => setOpenRowMenu(openRowMenu === id ? null : id)}
-                                className="h-8 w-8 inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white/70 text-gray-500 hover:bg-gray-100"
-                                aria-label="Acciones"
-                              >
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zm0 6a.75.75 0 110-1.5.75.75 0 010 1.5zm0 6a.75.75 0 110-1.5.75.75 0 010 1.5z" /></svg>
-                              </button>
-                              {openRowMenu === id && (
-                                <div className="absolute right-0 mt-2 w-40 rounded-xl border border-gray-200 bg-white shadow-lg z-10 p-1 text-sm">
-                                  <button
-                                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-gray-50 flex items-center gap-2"
-                                    onClick={() => { setOpenRowMenu(null); navigate(`/categorias/${id}/edit`); }}
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L8.478 18.174a4.5 4.5 0 01-1.897 1.128L4.125 20.25l.948-2.456a4.5 4.5 0 011.128-1.897L16.862 4.487z" /></svg>
-                                    Editar
-                                  </button>
-                                  <button
-                                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 text-red-600 flex items-center gap-2"
-                                    onClick={() => { setOpenRowMenu(null); setPendingDelete({ mode: 'single', ids: [id], nombre: categoria.nombre }); }}
-                                  >
-                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 7h12M9 7l1-3h4l1 3m1 0h-8l1 12a2 2 0 002 2h2a2 2 0 002-2l1-12zm-6 0h12" /></svg>
-                                    Eliminar
-                                  </button>
-                                </div>
-                              )}
-                            </div>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <span className="text-xs text-gray-500">{index + 1}</span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                          <div className="flex items-center justify-center gap-2">
+                            <Link
+                              to={`/categorias/${categoria.id_categoria}/edit`}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-all"
+                              title="Editar categoría"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                              </svg>
+                            </Link>
+                            <button
+                              onClick={() => setPendingDelete({ id: Number(categoria.id_categoria), nombre: categoria.nombre })}
+                              className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 hover:bg-red-100 text-red-600 transition-all"
+                              title="Eliminar categoría"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0" />
+                              </svg>
+                            </button>
                           </div>
                         </td>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-          {invalid && invalid.length > 0 && (
-            <div className="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded">
-              <h4 className="font-semibold text-yellow-800">Entradas inválidas (sin id_categoria)</h4>
-              <pre className="text-xs text-yellow-700 mt-2 overflow-auto max-h-40">{JSON.stringify(invalid, null, 2)}</pre>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
-          {/* StatusModal rendered by global StatusProvider */}
         </>
       )}
+
       <ConfirmModal
         open={!!pendingDelete}
-        title={pendingDelete?.mode === 'bulk'
-          ? `Eliminar ${pendingDelete.ids.length} categorías`
-          : `Eliminar categoría${pendingDelete?.nombre ? `: ${pendingDelete.nombre}` : ''}`}
-        description={pendingDelete?.mode === 'bulk'
-          ? 'Esta acción eliminará permanentemente todas las categorías seleccionadas. No se puede deshacer.'
-          : 'Esta acción no se puede deshacer. ¿Deseas continuar?'}
-        confirmLabel={pendingDelete?.mode === 'bulk' ? 'Sí, eliminar todas' : 'Sí, eliminar'}
+        title={`Eliminar categoría${pendingDelete?.nombre ? `: ${pendingDelete.nombre}` : ''}`}
+        description="Esta acción no se puede deshacer. ¿Deseas continuar?"
+        confirmLabel="Sí, eliminar"
         cancelLabel="Cancelar"
         loading={deleting}
         onCancel={() => setPendingDelete(null)}
-        onConfirm={() => {
-          if (!pendingDelete) return;
-            executeDeletion(pendingDelete.ids, pendingDelete.mode);
-        }}
+        onConfirm={handleDelete}
       />
     </div>
   );

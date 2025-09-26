@@ -20,8 +20,10 @@ const MAX_DIRECCION = 255;
 
 export default function ClienteForm({ initial = {}, onSubmit, submitLabel = 'Guardar', readonly = false, showSuccessInline = false }: Props) {
   const [nombre, setNombre] = useState(String(initial.nombre ?? ''));
+  const [apellido, setApellido] = useState(String(initial.apellido ?? ''));
   const [email, setEmail] = useState(String(initial.email ?? ''));
   const [telefono, setTelefono] = useState(String(initial.telefono ?? ''));
+  const [edad, setEdad] = useState(initial.edad !== undefined ? String(initial.edad) : '');
   const [direccion, setDireccion] = useState(String(initial.direccion ?? ''));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,8 +31,10 @@ export default function ClienteForm({ initial = {}, onSubmit, submitLabel = 'Gua
   const [touched, setTouched] = useState(false);
 
   const trimmedNombre = useMemo(() => nombre.trim(), [nombre]);
+  const trimmedApellido = useMemo(() => apellido.trim(), [apellido]);
   const trimmedEmail = useMemo(() => email.trim(), [email]);
   const trimmedTelefono = useMemo(() => telefono.trim(), [telefono]);
+  const trimmedEdad = useMemo(() => edad.trim(), [edad]);
   // Normalización: permitir '+' inicial, remover otros símbolos no numéricos
   const normalizedTelefono = useMemo(() => {
     if (!trimmedTelefono) return '';
@@ -43,6 +47,11 @@ export default function ClienteForm({ initial = {}, onSubmit, submitLabel = 'Gua
   const invalidNombre = touched && !trimmedNombre;
   const invalidEmail = !!trimmedEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail);
   const invalidTelefono = !!normalizedTelefono && normalizedTelefono.replace(/[^0-9]/g, '').length < 6;
+  const parsedEdad = useMemo(() => {
+    const n = Number(trimmedEdad);
+    return Number.isFinite(n) ? n : NaN;
+  }, [trimmedEdad]);
+  const invalidEdad = !!trimmedEdad && isNaN(parsedEdad);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -55,8 +64,10 @@ export default function ClienteForm({ initial = {}, onSubmit, submitLabel = 'Gua
     try {
       await onSubmit({
         nombre: trimmedNombre.substring(0, MAX_NOMBRE),
+        apellido: trimmedApellido ? trimmedApellido.substring(0, MAX_NOMBRE) : undefined,
+        edad: !isNaN(parsedEdad) ? parsedEdad : undefined,
         email: trimmedEmail ? trimmedEmail.substring(0, MAX_EMAIL) : undefined,
-  telefono: normalizedTelefono ? normalizedTelefono.substring(0, MAX_TELEFONO) : undefined,
+        telefono: normalizedTelefono ? normalizedTelefono.substring(0, MAX_TELEFONO) : undefined,
         direccion: trimmedDireccion ? trimmedDireccion.substring(0, MAX_DIRECCION) : undefined,
         id_cliente: initial.id_cliente,
       });
@@ -72,8 +83,10 @@ export default function ClienteForm({ initial = {}, onSubmit, submitLabel = 'Gua
 
   const reset = () => {
     setNombre('');
+    setApellido('');
     setEmail('');
     setTelefono('');
+    setEdad('');
     setDireccion('');
     setError(null);
     setTouched(false);
@@ -141,8 +154,27 @@ export default function ClienteForm({ initial = {}, onSubmit, submitLabel = 'Gua
           </div>
         </div>
 
-        {/* Email & Teléfono */}
-        <div className="grid md:grid-cols-2 gap-6">
+        {/* Apellido */}
+        <div className="relative">
+          <input
+            id="cliente-apellido"
+            placeholder="Apellido"
+            value={apellido}
+            maxLength={MAX_NOMBRE}
+            onChange={e => setApellido(e.target.value)}
+            onBlur={() => setTouched(true)}
+            className={inputClass(false)}
+            autoComplete="off"
+            disabled={readonly}
+          />
+          <label htmlFor="cliente-apellido" className={labelFloatClass(false)}>Apellido</label>
+          <div className="mt-1 min-h-[18px] text-xs">
+            <span className="text-gray-400">Opcional.</span>
+          </div>
+        </div>
+
+        {/* Email, Teléfono & Edad */}
+        <div className="grid md:grid-cols-3 gap-6">
           <div className="space-y-2">
             <div className="relative">
               <input
@@ -176,6 +208,27 @@ export default function ClienteForm({ initial = {}, onSubmit, submitLabel = 'Gua
               <label htmlFor="cliente-telefono" className={labelFloatClass(invalidTelefono)}>Teléfono</label>
               <div className="mt-1 min-h-[18px] text-xs">
                 {invalidTelefono ? <span className="text-red-600 font-medium">Teléfono demasiado corto.</span> : maskedTelefono ? <span className="text-gray-500 font-medium">{maskedTelefono}</span> : <span className="text-gray-400">Opcional.</span>}
+              </div>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <div className="relative">
+              <input
+                id="cliente-edad"
+                type="number"
+                placeholder="Edad"
+                value={edad}
+                onChange={e => setEdad(e.target.value)}
+                onBlur={() => setTouched(true)}
+                className={inputClass(invalidEdad)}
+                autoComplete="off"
+                disabled={readonly}
+              />
+              <label htmlFor="cliente-edad" className={labelFloatClass(invalidEdad)}>Edad</label>
+              <div className="mt-1 min-h-[18px] text-xs">
+                {invalidEdad
+                  ? <span className="text-red-600 font-medium">Edad inválida.</span>
+                  : <span className="text-gray-400">Opcional.</span>}
               </div>
             </div>
           </div>

@@ -9,10 +9,12 @@ type ApiProducto = {
   descripcion_producto?: string | null;
   precio?: number;
   precio_producto?: number;
+  costo?: number;
   stock?: number;
   existencia?: number;
   id_categoria?: number;
   categoria_id?: number;
+  imagen_url?: string;
   created_at?: string;
   updated_at?: string;
 };
@@ -25,11 +27,13 @@ function toDomain(api: ApiProducto): Producto | null {
 
   return {
     id_producto: id,
-    nombre: String(api.nombre_producto ?? api.nombre ?? '').trim(),
+    nombre_producto: String(api.nombre_producto ?? api.nombre ?? '').trim(),
     descripcion: api.descripcion ?? api.descripcion_producto ?? null,
     precio: api.precio ?? api.precio_producto ?? 0,
+    costo: api.costo,
     stock: api.stock ?? api.existencia,
     id_categoria: api.id_categoria ?? api.categoria_id,
+    imagen_url: api.imagen_url,
     created_at: api.created_at,
     updated_at: api.updated_at,
   } as Producto;
@@ -37,11 +41,13 @@ function toDomain(api: ApiProducto): Producto | null {
 
 function toApi(payload: Partial<Producto>): Partial<ApiProducto> {
   const out: Partial<ApiProducto> = {};
-  if (payload.nombre !== undefined) out.nombre_producto = payload.nombre;
+  if (payload.nombre_producto !== undefined) out.nombre_producto = payload.nombre_producto;
   if (payload.descripcion !== undefined) out.descripcion = payload.descripcion;
   if (payload.precio !== undefined) out.precio = payload.precio;
+  if (payload.costo !== undefined) out.costo = payload.costo;
   if (payload.stock !== undefined) out.stock = payload.stock;
   if (payload.id_categoria !== undefined) out.id_categoria = payload.id_categoria;
+  if (payload.imagen_url !== undefined) out.imagen_url = payload.imagen_url;
   return out;
 }
 
