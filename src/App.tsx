@@ -5,10 +5,10 @@ import Home from './presentation/pages/home/index';
 import './App.css';
 import { ProductosPage, ProductoCreatePage, ProductoEditPage } from './presentation/modules/producto';
 import { ClientesPage, ClienteCreatePage, ClienteEditPage } from './presentation/modules/clientes';
+import { OrdenesPage, OrdenCreatePage, OrdenEditPage } from './presentation/modules/ordenes';
 
 // Placeholder components (reemplaza con tus componentes reales)
 const Productos = () => <ProductosPage />;
-const Ordenes = () => <div className="p-4"><h1 className="text-2xl font-bold">Órdenes</h1><p>Aquí irá la gestión de órdenes</p></div>;
 const Clientes = () => <ClientesPage />;
 const Ventas = () => <div className="p-4"><h1 className="text-2xl font-bold">Ventas</h1><p>Aquí irá el reporte de ventas</p></div>;
 
@@ -25,7 +25,9 @@ function App() {
             <Route path="/productos" element={<Productos />} />
             <Route path="/productos/create" element={<ProductoCreatePage />} />
             <Route path="/productos/:id/edit" element={<ProductoEditPage />} />
-            <Route path="/ordenes" element={<Ordenes />} />
+            <Route path="/ordenes" element={<OrdenesPage />} />
+            <Route path="/ordenes/create" element={<OrdenCreatePage />} />
+            <Route path="/ordenes/:id/edit" element={<OrdenEditPage />} />
             <Route path="/clientes" element={<Clientes />} />
             <Route path="/clientes/create" element={<ClienteCreatePage />} />
             <Route path="/clientes/:id/edit" element={<ClienteEditPage />} />
