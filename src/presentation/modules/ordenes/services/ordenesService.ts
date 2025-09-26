@@ -1,11 +1,17 @@
-import { http } from '../../../../infrastructure/api/http';
+import * as api from '../../../../infrastructure/api/OrdenApi';
 import type { Orden } from '../../../../domain/entities/Orden';
 
-const ENDPOINT = '/ordenes';
-
-export const listOrdenes = async (): Promise<Orden[]> => {
-  return await http<Orden[]>(ENDPOINT, 'GET');
+// Reutilizamos la API de infraestructura que ya maneja endpoints con slash
+// y mapeos de respuesta -> dominio.
+export const listOrdenes: () => Promise<Orden[]> = api.listOrdenes;
+export const getOrden: (id: number) => Promise<Orden> = api.getOrden;
+export const createOrden = async (payload: Partial<Orden>): Promise<Orden> => {
+  return api.createOrden(payload);
 };
+export const updateOrden = async (id: number, payload: Partial<Orden>): Promise<Orden> => {
+  return api.updateOrden(id, payload);
+};
+export const deleteOrden: (id: number) => Promise<void> = api.deleteOrden;
 
 export const listOrdenesDetailed = async () => {
   try {
@@ -15,20 +21,4 @@ export const listOrdenesDetailed = async () => {
     console.error('Error al cargar órdenes:', error);
     return { valid: [], invalid: [error] };
   }
-};
-
-export const getOrden = async (id: number): Promise<Orden> => {
-  return await http<Orden>(`${ENDPOINT}/${id}`, 'GET');
-};
-
-export const createOrden = async (orden: Omit<Orden, 'id_orden' | 'created_at' | 'updated_at'>): Promise<Orden> => {
-  return await http<Orden>(ENDPOINT, 'POST', orden);
-};
-
-export const updateOrden = async (id: number, orden: Partial<Omit<Orden, 'id_orden' | 'created_at' | 'updated_at'>>): Promise<Orden> => {
-  return await http<Orden>(`${ENDPOINT}/${id}`, 'PUT', orden);
-};
-
-export const deleteOrden = async (id: number): Promise<void> => {
-  await http<void>(`${ENDPOINT}/${id}`, 'DELETE');
 };

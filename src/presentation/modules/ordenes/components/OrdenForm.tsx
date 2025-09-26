@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useOrdenes } from '../hooks/useOrdenes';
+import { getOrden } from '../services/ordenesService';
 import { useClientes } from '../../clientes';
 import type { Orden } from '../../../../domain/entities/Orden';
 import { useStatus } from '../../../core';
@@ -47,24 +48,54 @@ const OrdenForm = () => {
   }, [loadClientes]);
 
   useEffect(() => {
-    if (isEdit && id) {
-      const orden = ordenes.find(c => c.id_orden === Number(id));
-      if (orden) {
-        setFormData({
-          id_cliente: orden.id_cliente || 0,
-          estado_orden: orden.estado_orden || 'Pendiente',
-          direccion_envio: orden.direccion_envio || '',
-          ciudad_envio: orden.ciudad_envio || '',
-          codigo_postal_envio: orden.codigo_postal_envio || '',
-          pais_envio: orden.pais_envio || 'México',
-          metodo_envio: orden.metodo_envio || 'Standard',
-          costo_envio: orden.costo_envio || 0,
-          estado_envio: orden.estado_envio || 'Preparando',
-          total_orden: orden.total_orden || 0
-        });
+    let cancelled = false;
+    async function ensureOrden() {
+      if (!(isEdit && id)) return;
+      const existing = ordenes.find(c => c.id_orden === Number(id));
+      if (existing) {
+        if (!cancelled) {
+          setFormData({
+            id_cliente: existing.id_cliente || 0,
+            estado_orden: existing.estado_orden || 'Pendiente',
+            direccion_envio: existing.direccion_envio || '',
+            ciudad_envio: existing.ciudad_envio || '',
+            codigo_postal_envio: existing.codigo_postal_envio || '',
+            pais_envio: existing.pais_envio || 'México',
+            metodo_envio: existing.metodo_envio || 'Standard',
+            costo_envio: existing.costo_envio || 0,
+            estado_envio: existing.estado_envio || 'Preparando',
+            total_orden: existing.total_orden || 0
+          });
+        }
+        return;
+      }
+      try {
+        setLoading(true);
+        const fetched = await getOrden(Number(id));
+        if (!cancelled) {
+          setFormData({
+            id_cliente: fetched.id_cliente || 0,
+            estado_orden: fetched.estado_orden || 'Pendiente',
+            direccion_envio: fetched.direccion_envio || '',
+            ciudad_envio: fetched.ciudad_envio || '',
+            codigo_postal_envio: fetched.codigo_postal_envio || '',
+            pais_envio: fetched.pais_envio || 'México',
+            metodo_envio: fetched.metodo_envio || 'Standard',
+            costo_envio: fetched.costo_envio || 0,
+            estado_envio: fetched.estado_envio || 'Preparando',
+            total_orden: fetched.total_orden || 0,
+          });
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'No se pudo cargar la orden';
+        show({ title: 'Error al cargar', message, detail: err, variant: 'error' });
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     }
-  }, [id, isEdit, ordenes]);
+    ensureOrden();
+    return () => { cancelled = true; };
+  }, [id, isEdit, ordenes, show]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<OrdenFormData> = {};
@@ -99,7 +130,8 @@ const OrdenForm = () => {
 
     setLoading(true);
     try {
-      const ordenData: Omit<Orden, 'id_orden' | 'created_at' | 'updated_at'> = {
+      // Para updates no sobreescribimos fecha_orden; solo se envía al crear
+      const baseData: Omit<Orden, 'id_orden' | 'created_at' | 'updated_at'> = {
         id_cliente: formData.id_cliente,
         estado_orden: formData.estado_orden,
         direccion_envio: formData.direccion_envio,
@@ -110,18 +142,31 @@ const OrdenForm = () => {
         costo_envio: formData.costo_envio,
         estado_envio: formData.estado_envio,
         total_orden: formData.total_orden,
-        fecha_orden: new Date().toISOString()
+        fecha_orden: '' as unknown as string, // placeholder, se ajusta abajo
       };
 
       if (isEdit && id) {
-        await update(Number(id), ordenData);
+        const updatePayload = {
+          id_cliente: baseData.id_cliente,
+          estado_orden: baseData.estado_orden,
+          direccion_envio: baseData.direccion_envio,
+          ciudad_envio: baseData.ciudad_envio,
+          codigo_postal_envio: baseData.codigo_postal_envio,
+          pais_envio: baseData.pais_envio,
+          metodo_envio: baseData.metodo_envio,
+          costo_envio: baseData.costo_envio,
+          estado_envio: baseData.estado_envio,
+          total_orden: baseData.total_orden,
+        };
+        await update(Number(id), updatePayload);
         show({
           title: 'Orden actualizada',
           message: 'La orden se actualizó correctamente.',
           variant: 'success'
         });
       } else {
-        await create(ordenData);
+        const createPayload = { ...baseData, fecha_orden: new Date().toISOString() };
+        await create(createPayload);
         show({
           title: 'Orden creada',
           message: 'La orden se creó correctamente.',
@@ -151,7 +196,7 @@ const OrdenForm = () => {
     }
   };
 
-  if (loadingOrdenes || loadingClientes) {
+  if (loadingOrdenes || loadingClientes || (isEdit && loading)) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-4">

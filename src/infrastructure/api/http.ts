@@ -84,7 +84,9 @@ export async function http<T = unknown>(
     // Limpieza del body: eliminar claves tipo ID (inline)
     try {
       const methodUp = String(config.method).toUpperCase();
-      if (methodUp === 'POST' || methodUp === 'PUT' || methodUp === 'PATCH') {
+      // Skip ID cleanup for orders API so foreign key id_cliente is incluido en el body
+      const isOrdenesApi = String(config.url).includes('/ordenes');
+      if (!isOrdenesApi && (methodUp === 'POST' || methodUp === 'PUT' || methodUp === 'PATCH')) {
         const bodyObj = config.data as Record<string, unknown> | undefined;
         if (bodyObj && typeof bodyObj === 'object' && !(bodyObj instanceof FormData)) {
           const out = { ...bodyObj } as Record<string, unknown>;

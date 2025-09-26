@@ -4,7 +4,6 @@ import type { Orden } from '../../../../domain/entities';
 
 export function useOrdenes() {
   const [items, setItems] = useState<Orden[]>([]);
-  const [invalid, setInvalid] = useState<unknown[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -12,11 +11,12 @@ export function useOrdenes() {
     setLoading(true);
     setError(null);
     try {
-      const data = await service.listOrdenesDetailed();
-      setItems(data.valid);
-      setInvalid(data.invalid);
+      const data = await service.listOrdenes();
+      setItems(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
+      const message = err instanceof Error ? err.message : 'Error al cargar ordenes';
+      setError(message);
+      console.error('Error loading ordenes:', err);
     } finally {
       setLoading(false);
     }
@@ -25,11 +25,11 @@ export function useOrdenes() {
   const create = useCallback(async (ordenData: Omit<Orden, 'id_orden' | 'created_at' | 'updated_at'>) => {
     setLoading(true);
     try {
-      const newOrden = await service.createOrden(ordenData);
-      await load(); // Recargar la lista
-      return newOrden;
+      await service.createOrden(ordenData);
+      await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al crear orden');
+      const message = err instanceof Error ? err.message : 'Error al crear orden';
+      setError(message);
       throw err;
     } finally {
       setLoading(false);
@@ -39,11 +39,11 @@ export function useOrdenes() {
   const update = useCallback(async (id: number, ordenData: Partial<Omit<Orden, 'id_orden' | 'created_at' | 'updated_at'>>) => {
     setLoading(true);
     try {
-      const updatedOrden = await service.updateOrden(id, ordenData);
-      await load(); // Recargar la lista
-      return updatedOrden;
+      await service.updateOrden(id, ordenData);
+      await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar orden');
+      const message = err instanceof Error ? err.message : 'Error al actualizar orden';
+      setError(message);
       throw err;
     } finally {
       setLoading(false);
@@ -56,13 +56,13 @@ export function useOrdenes() {
       await service.deleteOrden(id);
       await load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al eliminar');
-      // Re-throw so callers (UI) can show context-specific error messages
+      const message = err instanceof Error ? err.message : 'Error al eliminar orden';
+      setError(message);
       throw err;
     } finally {
       setLoading(false);
     }
   }, [load]);
 
-  return { items, invalid, loading, error, load, create, update, remove } as const;
+  return { items, loading, error, load, create, update, remove } as const;
 }
