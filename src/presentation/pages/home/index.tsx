@@ -75,7 +75,17 @@ const Home = () => {
     return ordenes.filter((o) => {
       const estado = (o.estado_orden || '').toLowerCase();
       const estadoTextOk = q ? estado.includes(q) : true;
-      const estadoSelectOk = ordStatusSelect === 'all' ? true : estado.includes(ordStatusSelect);
+      // Map the selected status to possible substrings present in different backends/locales
+      let estadoSelectOk = true;
+      if (ordStatusSelect !== 'all') {
+        const mapping: Record<string, string[]> = {
+          pendiente: ['pendiente', 'pending'],
+          completada: ['completad', 'entreg', 'completed', 'delivered'],
+          cancelada: ['cancelad', 'cancelled'],
+        };
+        const candidates = mapping[ordStatusSelect] ?? [ordStatusSelect];
+        estadoSelectOk = candidates.some((substr) => estado.includes(substr));
+      }
       const clienteOk = ordClienteSelect === 'all' ? true : o.id_cliente === ordClienteSelect;
       let fechaOk = true;
       if (from || to) {
@@ -582,6 +592,7 @@ const Home = () => {
                     <div>
                       <div className="text-sm text-gray-600">Ventas este mes</div>
                       <div className="text-2xl font-bold text-gray-800">{formatCurrency(ventasThisMonthAmount)}</div>
+                      <div className="text-xs text-gray-500 mt-1">Transacciones: {ventasThisMonthCount.toLocaleString()}</div>
                     </div>
                   </div>
                   

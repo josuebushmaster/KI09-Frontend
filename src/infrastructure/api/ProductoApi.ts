@@ -41,12 +41,30 @@ function toDomain(api: ApiProducto): Producto | null {
 
 function toApi(payload: Partial<Producto>): Partial<ApiProducto> {
   const out: Partial<ApiProducto> = {};
-  if (payload.nombre_producto !== undefined) out.nombre_producto = payload.nombre_producto;
-  if (payload.descripcion !== undefined) out.descripcion = payload.descripcion;
-  if (payload.precio !== undefined) out.precio = payload.precio;
+  // Send several common aliases to increase compatibility with different backends.
+  // Some backends expect `nombre` / `precio_producto` / `categoria_id` instead of the
+  // exact snake_case used here; include both variants when available.
+  if (payload.nombre_producto !== undefined) {
+    out.nombre_producto = payload.nombre_producto;
+    out.nombre = payload.nombre_producto;
+  }
+  if (payload.descripcion !== undefined) {
+    out.descripcion = payload.descripcion;
+    out.descripcion_producto = payload.descripcion;
+  }
+  if (payload.precio !== undefined) {
+    out.precio = payload.precio;
+    out.precio_producto = payload.precio;
+  }
   if (payload.costo !== undefined) out.costo = payload.costo;
-  if (payload.stock !== undefined) out.stock = payload.stock;
-  if (payload.id_categoria !== undefined) out.id_categoria = payload.id_categoria;
+  if (payload.stock !== undefined) {
+    out.stock = payload.stock;
+    out.existencia = payload.stock;
+  }
+  if (payload.id_categoria !== undefined) {
+    out.id_categoria = payload.id_categoria;
+    out.categoria_id = payload.id_categoria;
+  }
   if (payload.imagen_url !== undefined) out.imagen_url = payload.imagen_url;
   return out;
 }

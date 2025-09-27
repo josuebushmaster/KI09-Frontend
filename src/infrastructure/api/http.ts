@@ -90,8 +90,19 @@ export async function http<T = unknown>(
       if (!isOrdenFlow && (methodUp === 'POST' || methodUp === 'PUT' || methodUp === 'PATCH')) {
         const bodyObj = config.data as Record<string, unknown> | undefined;
         if (bodyObj && typeof bodyObj === 'object' && !(bodyObj instanceof FormData)) {
+          // Development-only debug: when creating products, log the final body we send so
+          // the developer can inspect which keys remain after the id-cleanup step.
+          try {
+            if (import.meta.env.DEV && String(urlStr).includes('/productos') && methodUp === 'POST') {
+              console.debug('HTTP DEBUG - POST /productos final body (pre-cleanup view):', bodyObj);
+            }
+          } catch { /* ignore */ }
           const out = { ...bodyObj } as Record<string, unknown>;
-          const idPattern = /(^id$|id_|_id$|idCategoria|idcategoria)/i;
+          // Match only exact 'id', keys that end with '_id' (e.g. 'categoria_id'),
+          // or camelCase/idCategoria variants. Do NOT match keys that simply start
+          // with 'id_' like 'id_categoria' because those are valid foreign-key
+          // names used by the API (e.g. id_categoria for products).
+          const idPattern = /(^id$|_id$|idCategoria|idcategoria)/i;
           const removed: string[] = [];
           for (const k of Object.keys(out)) {
             if (idPattern.test(k)) {

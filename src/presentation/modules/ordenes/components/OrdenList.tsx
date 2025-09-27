@@ -8,6 +8,8 @@ const OrdenList = () => {
   const { items: ordenes, loading, error, load, remove } = useOrdenes();
   const { items: clientes, load: loadClientes } = useClientes();
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
   const [pendingDelete, setPendingDelete] = useState<{ id: number; numero?: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [viewMode, setViewMode] = useState<'cards' | 'list'>(() => {
@@ -65,16 +67,38 @@ const OrdenList = () => {
     return 'bg-gray-100 text-gray-800';
   };
 
-  // Filtrar órdenes basado en el término de búsqueda
+  // Filtrar órdenes basado en el término de búsqueda y rango de fechas
   const filteredOrdenes = ordenes.filter((orden) => {
-    const matchesSearch = searchTerm === '' || 
-      orden.id_orden.toString().includes(searchTerm.toLowerCase()) ||
-      getClienteName(orden.id_cliente).toLowerCase().includes(searchTerm.toLowerCase()) ||
-      orden.estado_orden?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      orden.direccion_envio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      orden.ciudad_envio?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    return matchesSearch;
+    const q = searchTerm.trim().toLowerCase();
+    const matchesSearch = q === '' || 
+      orden.id_orden.toString().includes(q) ||
+      getClienteName(orden.id_cliente).toLowerCase().includes(q) ||
+      orden.estado_orden?.toLowerCase().includes(q) ||
+      orden.direccion_envio?.toLowerCase().includes(q) ||
+      orden.ciudad_envio?.toLowerCase().includes(q);
+
+    // Fecha
+    let dateOk = true;
+    if (dateFrom || dateTo) {
+      const d = new Date(orden.fecha_orden);
+      if (Number.isNaN(d.getTime())) dateOk = false;
+      else {
+        if (dateFrom) {
+          const from = new Date(dateFrom);
+          if (!Number.isNaN(from.getTime()) && d < from) dateOk = false;
+        }
+        if (dateTo) {
+          const to = new Date(dateTo);
+          if (!Number.isNaN(to.getTime())) {
+            const toEnd = new Date(to);
+            toEnd.setHours(23, 59, 59, 999);
+            if (d > toEnd) dateOk = false;
+          }
+        }
+      }
+    }
+
+    return matchesSearch && dateOk;
   });
 
   const clearFilters = () => {
@@ -172,6 +196,32 @@ const OrdenList = () => {
           </div>
           
           {/* Controles de vista */}
+          <div className="hidden md:flex items-center gap-2">
+            <input
+              type="date"
+              aria-label="Fecha desde"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
+            />
+            <input
+              type="date"
+              aria-label="Fecha hasta"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none"
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                type="button"
+                onClick={() => { setDateFrom(''); setDateTo(''); }}
+                className="text-xs text-red-600 hover:text-red-700"
+                title="Limpiar fechas"
+              >
+                Limpiar fechas
+              </button>
+            )}
+          </div>
           <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => handleViewModeChange('cards')}
