@@ -56,6 +56,17 @@ function toApi(payload: Partial<Orden>): Partial<ApiOrden> {
   return out;
 }
 
+// Unificar manejo de errores extrayendo el campo `detail` del backend
+function parseApiError(err: unknown): Error {
+  try {
+    const e = err as { detail?: unknown; message?: unknown; response?: { data?: { detail?: unknown } } } | undefined;
+    const detail = e?.detail ?? e?.message ?? e?.response?.data?.detail ?? 'Error inesperado';
+    return new Error(String(detail));
+  } catch {
+    return new Error('Error inesperado');
+  }
+}
+
 export async function listOrdenes(): Promise<Orden[]> {
   const data = await http<ApiOrden[]>('ordenes/');
   return Array.isArray(data) ? data.map(toDomain) : [];
@@ -67,19 +78,82 @@ export async function getOrden(id: number): Promise<Orden> {
 }
 
 export async function createOrden(payload: Partial<Orden>): Promise<Orden> {
-  const apiPayload = toApi(payload);
-  const data = await http<ApiOrden>('ordenes/', 'POST', apiPayload);
-  return toDomain(data);
+  try {
+    const apiPayload = toApi(payload);
+    // Endpoint real para crear: POST /orden (singular)
+    const data = await http<ApiOrden>('orden', 'POST', apiPayload);
+    return toDomain(data);
+  } catch (e) {
+    throw parseApiError(e);
+  }
 }
 
 export async function updateOrden(id: number, payload: Partial<Orden>): Promise<Orden> {
-  const apiPayload = toApi(payload);
-  const data = await http<ApiOrden>(`ordenes/${id}`, 'PUT', apiPayload);
-  return toDomain(data);
+  try {
+    const apiPayload = toApi(payload);
+    const data = await http<ApiOrden>(`ordenes/${id}`, 'PUT', apiPayload);
+    return toDomain(data);
+  } catch (e) {
+    throw parseApiError(e);
+  }
 }
 
 export async function deleteOrden(id: number): Promise<void> {
-  await http<void>(`ordenes/${id}`, 'DELETE');
+  try {
+    await http<void>(`ordenes/${id}`, 'DELETE');
+  } catch (e) {
+    throw parseApiError(e);
+  }
+}
+
+// ===== Ítems de orden =====
+export type OrdenProductoCreateDTO = {
+  id_producto: number;
+  cantidad: number;
+  precio_unitario: number;
+  id_orden: number;
+};
+
+export type OrdenProductoResponseDTO = {
+  id_ordenProd: number;
+  id_producto: number;
+  cantidad: number;
+  precio_unitario: number;
+  id_orden: number;
+};
+
+// POST /orden-producto
+export async function addOrdenItem(dto: OrdenProductoCreateDTO): Promise<OrdenProductoResponseDTO> {
+  try {
+    return await http<OrdenProductoResponseDTO>('orden-producto', 'POST', dto);
+  } catch (e) {
+    throw parseApiError(e);
+  }
+}
+
+// ===== Ventas =====
+export type VentaCreateDTO = {
+  id_orden: number;
+  fecha_venta: string;   // ISO
+  total_venta: number;
+  metodo_pago: string;
+};
+
+export type VentaResponseDTO = {
+  id_venta: number;
+  id_orden: number;
+  fecha_venta: string;
+  total_venta: number;
+  metodo_pago: string;
+};
+
+// POST /ventas
+export async function confirmVenta(dto: VentaCreateDTO): Promise<VentaResponseDTO> {
+  try {
+    return await http<VentaResponseDTO>('ventas', 'POST', dto);
+  } catch (e) {
+    throw parseApiError(e);
+  }
 }
 
 export default {};
