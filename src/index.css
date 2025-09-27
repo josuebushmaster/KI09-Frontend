@@ -1,1 +1,22 @@
 @import "tailwindcss";
+
+/* Scrollbar estilizado para el sidebar */
+.ki09-scroll {
+	pointer-events: auto; /* hook para evitar regla vacía */
+}
+
+/* WebKit (Chrome, Edge, Safari) */
+.ki09-scroll::-webkit-scrollbar {
+	width: 8px;
+}
+.ki09-scroll::-webkit-scrollbar-track {
+	background: #0f172a; /* slate-900 */
+}
+.ki09-scroll::-webkit-scrollbar-thumb {
+	background: linear-gradient(180deg, rgba(59,130,246,0.65), rgba(59,130,246,0.45)); /* blue-500 */
+	border-radius: 9999px;
+	border: 2px solid #0f172a;
+}
+.ki09-scroll::-webkit-scrollbar-thumb:hover {
+	background: linear-gradient(180deg, rgba(59,130,246,0.85), rgba(59,130,246,0.65));
+}

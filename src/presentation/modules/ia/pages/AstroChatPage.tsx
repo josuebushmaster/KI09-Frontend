@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import astraLogo from '../../../../assets/astra.png';
-import logo25 from '../../../../assets/logo25.png';
+import logoUma from '../../../../assets/logo uma.jpg';
 import { useAstroChat } from '../hooks/useAstroChat';
 import Toast from '../../../components/Toast';
 import { sendFeedback } from '../../../../infrastructure/api/iaApi';
@@ -241,9 +241,19 @@ export default function AstroChatPage() {
       <div className="max-w-5xl mx-auto space-y-4">
         {/* Header */}
         <div className="rounded-xl bg-white/5 border border-white/10 backdrop-blur-md p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0">
-          <div className="flex items-center gap-4">
-            <img src={astraLogo} alt="Astra logo" className="h-12 w-12 sm:h-16 sm:w-16 object-cover rounded-full shadow-sm" />
-            <img src={logo25} alt="Logo" className="h-8 w-8 sm:h-10 sm:w-10 object-cover rounded-full shadow-sm mx-3" />
+          <div className="flex items-center gap-4 w-full">
+            <div className="flex-shrink-0">
+              <img src={astraLogo} alt="Astra logo" className="h-14 w-14 sm:h-20 sm:w-20 object-cover rounded-full shadow-sm" />
+            </div>
+            <div className="flex-1 ml-3">
+              <div className="w-full h-36 sm:h-44 md:h-56 bg-white/6 p-3 rounded-xl flex items-center justify-center overflow-hidden shadow-2xl border-2 border-white/10">
+                <img
+                  src={logoUma}
+                  alt="Logo UMA"
+                  className="w-full h-full object-contain rounded-xl"
+                />
+              </div>
+            </div>
           </div>
         </div>
 

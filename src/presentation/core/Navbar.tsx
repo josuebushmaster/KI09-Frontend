@@ -179,7 +179,7 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
         },
         {
           path: '/astro',
-          label: 'IA (Astro)',
+          label: 'IA (Astra)',
           icon: (
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m9-9H3" />
@@ -250,7 +250,7 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
       )}
 
       {/* Sidebar */}
-      <div className={`${isMobile ? 'fixed' : 'fixed'} left-0 ${isMobile ? 'top-16' : 'top-0'} h-full bg-gray-900 border-r border-gray-800 transition-all duration-300 z-40 ${
+      <div className={`fixed left-0 ${isMobile ? 'top-16 bottom-0' : 'top-0 bottom-0'} bg-gradient-to-b from-gray-950 via-gray-900 to-gray-900 border-r border-gray-800/80 transition-all duration-300 z-40 flex flex-col min-h-0 shadow-xl shadow-black/20 ${
         isMobile 
           ? (mobileMenuOpen ? 'w-64 translate-x-0' : 'w-64 -translate-x-full')
           : (isCollapsed ? 'w-16' : 'w-64')
@@ -360,8 +360,10 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
           </div>
         )}
 
-        {/* Navigation */}
-        <nav className="flex-1 p-3 space-y-6 overflow-y-auto">
+  {/* Navigation */}
+  {/* Fade top overlay */}
+  <div className="pointer-events-none sticky top-0 h-6 bg-gradient-to-b from-gray-900 to-transparent z-10"></div>
+  <nav className="flex-1 p-3 space-y-6 overflow-y-auto overscroll-contain ki09-scroll">
           {navSections.map((section, sectionIndex) => (
             <div key={sectionIndex}>
               {section.title && !(isCollapsed && !isMobile) && (
@@ -378,10 +380,10 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
                         to={item.path}
                         onClick={() => isMobile && setMobileMenuOpen(false)}
                         title={isCollapsed && !isMobile ? item.label : undefined}
-                        className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 group ${
+                        className={`flex items-center px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group border ${
                           active
-                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/25'
-                            : 'text-gray-300 hover:bg-gray-800 hover:text-white'
+                            ? 'bg-blue-600/90 border-blue-400/30 text-white shadow shadow-blue-600/30'
+                            : 'bg-white/0 border-transparent text-gray-300 hover:bg-white/5 hover:border-white/10 hover:text-white'
                         }`}
                       >
                         <span className={`flex-shrink-0 ${active ? 'text-white' : 'text-gray-400 group-hover:text-white'}`}>
@@ -398,7 +400,9 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
               </ul>
             </div>
           ))}
-        </nav>
+  </nav>
+  {/* Fade bottom overlay */}
+  <div className="pointer-events-none sticky bottom-0 h-7 bg-gradient-to-t from-gray-900 to-transparent z-10"></div>
 
         {/* User Profile */}
         {(!isCollapsed || isMobile) && (
