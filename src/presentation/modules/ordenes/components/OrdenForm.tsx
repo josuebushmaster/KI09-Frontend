@@ -160,28 +160,41 @@ const OrdenForm = () => {
           estado_envio: baseData.estado_envio,
           total_orden: baseData.total_orden,
         };
-        // Normalizar payload: mapear estado a id numérico si es texto, asegurar tipos
-        const STATUS_MAP: Record<string, number> = {
-          pendiente: 1,
-          confirmada: 2,
-          procesando: 3,
-          completada: 4,
-          cancelada: 5,
-        };
-
         const normalized: Record<string, unknown> = {};
         // id_cliente
-        normalized.id_cliente = Number(updatePayload.id_cliente ?? 0);
-        // estado_orden -> preferir número
+  normalized.id_cliente = Number(updatePayload.id_cliente ?? 0);
+  // ensure id_orden present for PUTs as some backends validate it is included
+  normalized.id_orden = Number(id ?? 0);
+        const STATUS_LABEL_FROM_CODE: Record<number, string> = {
+          1: 'Pendiente',
+          2: 'Confirmada',
+          3: 'Procesando',
+          4: 'Completada',
+          5: 'Cancelada',
+        };
+        const STATUS_CANONICAL: Record<string, string> = Object.values(STATUS_LABEL_FROM_CODE).reduce((acc, label) => {
+          acc[label.toLowerCase()] = label;
+          return acc;
+        }, {} as Record<string, string>);
+
         const rawEstado = updatePayload.estado_orden;
-        if (typeof rawEstado === 'number') normalized.estado_orden = rawEstado;
-        else if (typeof rawEstado === 'string') {
-          const t = rawEstado.trim();
-          const lower = t.toLowerCase();
-          if (Object.prototype.hasOwnProperty.call(STATUS_MAP, lower)) normalized.estado_orden = STATUS_MAP[lower];
-          else if (!Number.isNaN(Number(t))) normalized.estado_orden = Number(t);
-          else normalized.estado = t; // fallback textual
-        }
+        const normalizedEstado = (() => {
+          if (rawEstado === null || rawEstado === undefined) return 'Pendiente';
+          if (typeof rawEstado === 'number') return STATUS_LABEL_FROM_CODE[rawEstado] ?? String(rawEstado);
+          if (typeof rawEstado === 'string') {
+            const t = rawEstado.trim();
+            if (!t) return 'Pendiente';
+            const canonical = STATUS_CANONICAL[t.toLowerCase()];
+            return canonical ?? t;
+          }
+          try {
+            return String(rawEstado);
+          } catch {
+            return 'Pendiente';
+          }
+        })();
+        normalized.estado_orden = normalizedEstado;
+        normalized.estado = normalizedEstado;
         // Campos string
         normalized.direccion_envio = String(updatePayload.direccion_envio ?? '');
   normalized.fecha_orden = String(updatePayload.fecha_orden ?? '');

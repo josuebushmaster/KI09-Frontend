@@ -22,12 +22,47 @@ type ApiOrden = {
   updated_at?: string;
 };
 
+const ESTADO_DEFAULT = 'Pendiente';
+const STATUS_LABEL_FROM_CODE: Record<number, string> = {
+  1: 'Pendiente',
+  2: 'Confirmada',
+  3: 'Procesando',
+  4: 'Completada',
+  5: 'Cancelada',
+};
+
+const STATUS_CANONICAL: Record<string, string> = Object.values(STATUS_LABEL_FROM_CODE).reduce((acc, label) => {
+  acc[label.toLowerCase()] = label;
+  return acc;
+}, {} as Record<string, string>);
+
+function normalizeEstadoOrden(value: unknown): string {
+  if (value === null || value === undefined) return ESTADO_DEFAULT;
+
+  if (typeof value === 'number') {
+    return STATUS_LABEL_FROM_CODE[value] ?? String(value);
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return ESTADO_DEFAULT;
+    const canonical = STATUS_CANONICAL[trimmed.toLowerCase()];
+    return canonical ?? trimmed;
+  }
+
+  try {
+    return String(value);
+  } catch {
+    return ESTADO_DEFAULT;
+  }
+}
+
 function toDomain(api: ApiOrden): Orden {
   return {
     id_orden: Number(api.id_orden ?? 0),
     id_cliente: Number(api.id_cliente ?? 0),
     fecha_orden: api.fecha_orden ?? '',
-    estado_orden: api.estado_orden ?? api.estado ?? 'Pendiente',
+    estado_orden: normalizeEstadoOrden(api.estado_orden ?? api.estado),
     direccion_envio: api.direccion_envio ?? '',
     total_orden: (api.total_orden ?? api.total ?? 0) as number,
     ciudad_envio: api.ciudad_envio ?? '',
@@ -44,41 +79,14 @@ function toDomain(api: ApiOrden): Orden {
 function toApi(payload: Partial<Orden>): Partial<ApiOrden> {
   const out: Partial<ApiOrden> = {};
   if (payload.id_cliente !== undefined) out.id_cliente = payload.id_cliente;
+  const asRecord = payload as Partial<Record<string, unknown>>;
+  if (asRecord['id_orden'] !== undefined) out.id_orden = Number(asRecord['id_orden'] as number);
   if (payload.fecha_orden !== undefined) out.fecha_orden = payload.fecha_orden;
   if (payload.estado_orden !== undefined) {
-    // Some backends store order state as an integer (enum/lookup). Map common
-    // human-readable labels to integers before sending. If we can't map and the
-    // value is numeric-like, send it as number. Otherwise, send the textual
-    // status under `estado` so backend logic that accepts strings can consume it.
-    const raw = payload.estado_orden as unknown;
-
-    const STATUS_MAP: Record<string, number> = {
-      pendiente: 1,
-      confirmada: 2,
-      procesando: 3,
-      completada: 4,
-      cancelada: 5,
-    };
-
+    const normalizedEstado = normalizeEstadoOrden(payload.estado_orden);
     const apiOut = out as ApiOrden & Record<string, unknown>;
-    if (typeof raw === 'number') {
-      // enviar número
-      apiOut.estado_orden = raw;
-    } else if (typeof raw === 'string') {
-      const trimmed = raw.trim();
-      const lower = trimmed.toLowerCase();
-      if (Object.prototype.hasOwnProperty.call(STATUS_MAP, lower)) {
-        // mapear a id numérico
-        apiOut.estado_orden = STATUS_MAP[lower];
-      } else if (!Number.isNaN(Number(trimmed))) {
-        apiOut.estado_orden = Number(trimmed);
-      } else {
-        // textual fallback
-        apiOut.estado = trimmed;
-      }
-    } else {
-      apiOut.estado = String(payload.estado_orden);
-    }
+    apiOut.estado_orden = normalizedEstado;
+    apiOut.estado = normalizedEstado;
   }
   if (payload.direccion_envio !== undefined) out.direccion_envio = payload.direccion_envio;
   if (payload.total_orden !== undefined) out.total_orden = payload.total_orden;

@@ -10,6 +10,41 @@ interface HttpError extends Error {
   payload?: unknown;
 }
 
+function safeJsonStringify(value: unknown): string | null {
+  if (typeof value === "string") {
+    return value;
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return null;
+  }
+}
+
+function logUnprocessableEntity(error: unknown): void {
+  if (!axios.isAxiosError(error) || error.response?.status !== 422) {
+    return;
+  }
+
+  const data = error.response?.data;
+  const pretty = safeJsonStringify(data);
+  if (pretty) {
+    console.error("🔴 HTTP 422 response body:", pretty);
+  } else {
+    console.error("🔴 HTTP 422 response body (raw):", data);
+  }
+
+  const detail = (data as { detail?: unknown })?.detail;
+  if (Array.isArray(detail) && detail.length > 0) {
+    const prettyDetail = safeJsonStringify(detail);
+    if (prettyDetail) {
+      console.error("🔴 HTTP 422 detail[]:", prettyDetail);
+    } else {
+      console.error("🔴 HTTP 422 detail[] (raw):", detail);
+    }
+  }
+}
+
 async function parseResponse<T>(response: AxiosResponse<T>): Promise<T> {
   if (response.status >= 200 && response.status < 300) {
     return response.data;
@@ -41,8 +76,14 @@ export async function http<T = unknown>(
     Accept: "application/json",
   };
 
-  const token = getAuthToken();
-  if (token) headers["Authorization"] = `Bearer ${token}`;
+  try {
+    const token = getAuthToken();
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+  } catch {
+    // localStorage might be unavailable (SSR/tests); ignore silently
+  }
 
   const config = {
     method,
@@ -74,38 +115,38 @@ export async function http<T = unknown>(
   try {
     // Log específico para debugging de creación de categorías (temporal)
     try {
-      if (String(config.url).includes('/categorias') && String(config.method).toUpperCase() === 'POST') {
-        console.log('🔍 HTTP DEBUG - POST a /categorias - body:', config.data);
+      if (String(config.url).includes("/categorias") && String(config.method).toUpperCase() === "POST") {
+        console.log("🔍 HTTP DEBUG - POST a /categorias - body:", config.data);
       }
     } catch {
       // ignore logging errors
     }
 
-      // Debug específico para órdenes: loguear payloads enviados en POST/PUT
-      try {
-        const urlStrDebug = String(config.url || '');
-        const m = String(config.method).toUpperCase();
-        if (urlStrDebug.includes('/ordenes') && (m === 'POST' || m === 'PUT' || m === 'PATCH')) {
-          if (import.meta.env.DEV) console.debug('🔍 HTTP DEBUG - /ordenes request', { method: m, url: urlStrDebug, body: config.data });
-        }
-      } catch {
-        /* ignore logging errors */
+    // Debug específico para órdenes: loguear payloads enviados en POST/PUT
+    try {
+      const urlStrDebug = String(config.url || "");
+      const m = String(config.method).toUpperCase();
+      if (urlStrDebug.includes("/ordenes") && (m === "POST" || m === "PUT" || m === "PATCH")) {
+        if (import.meta.env.DEV) console.debug("🔍 HTTP DEBUG - /ordenes request", { method: m, url: urlStrDebug, body: config.data });
       }
+    } catch {
+      /* ignore logging errors */
+    }
 
     // Limpieza del body: eliminar claves tipo ID (inline)
     try {
       const methodUp = String(config.method).toUpperCase();
       // Skip ID cleanup for orders-related endpoints to preserve foreign keys (id_cliente, id_orden, id_producto)
       const urlStr = String(config.url);
-  const isOrdenFlow = urlStr.includes('/ordenes') || urlStr.endsWith('/orden') || urlStr.includes('/orden-producto') || urlStr.includes('/ordenproductos') || urlStr.includes('/ventas');
-      if (!isOrdenFlow && (methodUp === 'POST' || methodUp === 'PUT' || methodUp === 'PATCH')) {
+      const isOrdenFlow = urlStr.includes("/ordenes") || urlStr.endsWith("/orden") || urlStr.includes("/orden-producto") || urlStr.includes("/ordenproductos") || urlStr.includes("/ventas");
+      if (!isOrdenFlow && (methodUp === "POST" || methodUp === "PUT" || methodUp === "PATCH")) {
         const bodyObj = config.data as Record<string, unknown> | undefined;
         if (bodyObj && typeof bodyObj === 'object' && !(bodyObj instanceof FormData)) {
           // Development-only debug: when creating products, log the final body we send so
           // the developer can inspect which keys remain after the id-cleanup step.
           try {
-            if (import.meta.env.DEV && String(urlStr).includes('/productos') && methodUp === 'POST') {
-              console.debug('HTTP DEBUG - POST /productos final body (pre-cleanup view):', bodyObj);
+            if (import.meta.env.DEV && String(urlStr).includes("/productos") && methodUp === "POST") {
+              console.debug("HTTP DEBUG - POST /productos final body (pre-cleanup view):", bodyObj);
             }
           } catch { /* ignore */ }
           const out = { ...bodyObj } as Record<string, unknown>;
@@ -158,13 +199,7 @@ export async function http<T = unknown>(
     }
 
     if (axios.isAxiosError(err)) {
-        try {
-          if (err.response?.status === 422) {
-            console.error('🔴 HTTP 422 response body:', err.response?.data);
-          }
-        } catch {
-          /* ignore */
-        }
+      logUnprocessableEntity(err);
       const data = err.response?.data as { detail?: string; message?: string } | null;
       const message = (data?.detail ?? data?.message) || err.message;
       const httpError: HttpError = new Error(String(message)) as HttpError;
