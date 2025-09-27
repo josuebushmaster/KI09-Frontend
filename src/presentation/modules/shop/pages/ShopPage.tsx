@@ -21,6 +21,8 @@ function ShopPageInner() {
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<number | 'all'>('all');
   const [onlyAvailable, setOnlyAvailable] = useState(true);
+  const [sortBy, setSortBy] = useState<'popular' | 'priceAsc' | 'priceDesc' | 'newest'>('popular');
+  const [pageSize, setPageSize] = useState(12);
   const [showCartOnMobile, setShowCartOnMobile] = useState(false);
   const [showCartDesktop, setShowCartDesktop] = useState(false);
   const [showCheckoutModal, setShowCheckoutModal] = useState(false);
@@ -78,6 +80,22 @@ function ShopPageInner() {
       return true;
     });
   }, [products, categoryFilter, onlyAvailable, searchTerm]);
+
+  const sortedProducts = useMemo(() => {
+    const arr = [...filteredProducts];
+    switch (sortBy) {
+      case 'priceAsc':
+        return arr.sort((a, b) => (Number(a.precio ?? 0) - Number(b.precio ?? 0)));
+      case 'priceDesc':
+        return arr.sort((a, b) => (Number(b.precio ?? 0) - Number(a.precio ?? 0)));
+      case 'newest':
+        return arr.sort((a, b) => (Number(b.id_producto ?? 0) - Number(a.id_producto ?? 0)));
+      default:
+        return arr; // popular = default ordering
+    }
+  }, [filteredProducts, sortBy]);
+
+  const visibleProducts = useMemo(() => sortedProducts.slice(0, pageSize), [sortedProducts, pageSize]);
 
   const handleCartAccess = () => {
     if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
@@ -157,22 +175,33 @@ function ShopPageInner() {
           </section>
 
           <section className="rounded-3xl border border-neutral-200 bg-white/80 p-6 shadow-md backdrop-blur">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="text-lg font-semibold text-neutral-900">Catálogo de productos</h2>
                 <p className="text-sm text-neutral-500">Encuentra artículos por nombre, categoría o disponibilidad.</p>
               </div>
-              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                <div className="flex flex-1 items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-3 py-2 shadow-sm">
                   <span className="text-neutral-400">🔍</span>
                   <input
                     type="search"
                     placeholder="Buscar por nombre o descripción"
                     value={searchTerm}
                     onChange={(event) => setSearchTerm(event.target.value)}
-                    className="w-full bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none"
+                    className="w-56 bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none"
                   />
                 </div>
+                <select
+                  value={sortBy}
+                  onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSortBy(e.target.value as 'popular' | 'priceAsc' | 'priceDesc' | 'newest')}
+                  aria-label="Ordenar productos"
+                  className="rounded-xl border border-neutral-200 bg-white px-3 py-2 text-sm"
+                >
+                  <option value="popular">Más relevantes</option>
+                  <option value="priceAsc">Precio: menor</option>
+                  <option value="priceDesc">Precio: mayor</option>
+                  <option value="newest">Nuevos</option>
+                </select>
                 <button
                   type="button"
                   onClick={handleCartAccess}
@@ -183,8 +212,8 @@ function ShopPageInner() {
               </div>
             </div>
 
-            <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-wrap gap-2 items-center">
                 <select
                   value={categoryFilter}
                   onChange={(event) => {
@@ -225,18 +254,30 @@ function ShopPageInner() {
                 </div>
               )}
               {status === 'success' && filteredProducts.length > 0 && (
-                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                  {filteredProducts.map((product) => (
-                    <ProductCard
-                      key={product.id_producto}
-                      product={product}
-                      inCartQuantity={getItemQuantity(product.id_producto)}
-                      onAdd={handleAddProduct}
-                      onIncrement={handleIncrement}
-                      onDecrement={handleDecrement}
-                    />
-                  ))}
-                </div>
+                <>
+                  <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+                    {visibleProducts.map((product) => (
+                      <ProductCard
+                        key={product.id_producto}
+                        product={product}
+                        inCartQuantity={getItemQuantity(product.id_producto)}
+                        onAdd={handleAddProduct}
+                        onIncrement={handleIncrement}
+                        onDecrement={handleDecrement}
+                      />
+                    ))}
+                  </div>
+                  {visibleProducts.length < sortedProducts.length && (
+                    <div className="mt-6 flex justify-center">
+                      <button
+                        onClick={() => setPageSize((s) => s + 12)}
+                        className="rounded-xl border px-4 py-2 text-sm font-semibold"
+                      >
+                        Cargar más
+                      </button>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </section>
