@@ -11,6 +11,7 @@ import * as ordenApi from '../../../../infrastructure/api/OrdenApi';
 interface OrdenFormData {
   id_cliente: number;
   estado_orden: string;
+  fecha_orden: string;
   direccion_envio: string;
   ciudad_envio: string;
   codigo_postal_envio: string;
@@ -33,6 +34,7 @@ const OrdenForm = () => {
   const [formData, setFormData] = useState<OrdenFormData>({
     id_cliente: 0,
     estado_orden: 'Pendiente',
+    fecha_orden: '',
     direccion_envio: '',
     ciudad_envio: '',
     codigo_postal_envio: '',
@@ -63,6 +65,7 @@ const OrdenForm = () => {
         setFormData({
           id_cliente: fetched.id_cliente || 0,
           estado_orden: fetched.estado_orden || 'Pendiente',
+          fecha_orden: fetched.fecha_orden || '',
           direccion_envio: fetched.direccion_envio || '',
           ciudad_envio: fetched.ciudad_envio || '',
           codigo_postal_envio: fetched.codigo_postal_envio || '',
@@ -125,9 +128,13 @@ const OrdenForm = () => {
     setLoading(true);
     try {
       // Para updates no sobreescribimos fecha_orden; solo se envía al crear
+      // Recalcular total desde los ítems actuales para evitar race conditions
+      const totalFromItems = orderItems && orderItems.length ? orderItems.reduce((s, it) => s + (Number(it.precio_unitario ?? 0) * Number(it.cantidad ?? 0)), 0) : formData.total_orden;
+
       const baseData: Omit<Orden, 'id_orden' | 'created_at' | 'updated_at'> = {
         id_cliente: formData.id_cliente,
         estado_orden: formData.estado_orden,
+        fecha_orden: formData.fecha_orden,
         direccion_envio: formData.direccion_envio,
         ciudad_envio: formData.ciudad_envio,
         codigo_postal_envio: formData.codigo_postal_envio,
@@ -135,14 +142,15 @@ const OrdenForm = () => {
         metodo_envio: formData.metodo_envio,
         costo_envio: formData.costo_envio,
         estado_envio: formData.estado_envio,
-        total_orden: formData.total_orden,
-        fecha_orden: '' as unknown as string, // placeholder, se ajusta abajo
+        total_orden: Number(totalFromItems ?? formData.total_orden),
+        // fecha_orden se carga desde el formulario/orden existente y se envda en PUT
       };
 
       if (isEdit && id) {
         const updatePayload = {
           id_cliente: baseData.id_cliente,
           estado_orden: baseData.estado_orden,
+          fecha_orden: baseData.fecha_orden,
           direccion_envio: baseData.direccion_envio,
           ciudad_envio: baseData.ciudad_envio,
           codigo_postal_envio: baseData.codigo_postal_envio,
@@ -152,16 +160,53 @@ const OrdenForm = () => {
           estado_envio: baseData.estado_envio,
           total_orden: baseData.total_orden,
         };
-        await update(Number(id), updatePayload);
+        // Normalizar payload: mapear estado a id numérico si es texto, asegurar tipos
+        const STATUS_MAP: Record<string, number> = {
+          pendiente: 1,
+          confirmada: 2,
+          procesando: 3,
+          completada: 4,
+          cancelada: 5,
+        };
+
+        const normalized: Record<string, unknown> = {};
+        // id_cliente
+        normalized.id_cliente = Number(updatePayload.id_cliente ?? 0);
+        // estado_orden -> preferir número
+        const rawEstado = updatePayload.estado_orden;
+        if (typeof rawEstado === 'number') normalized.estado_orden = rawEstado;
+        else if (typeof rawEstado === 'string') {
+          const t = rawEstado.trim();
+          const lower = t.toLowerCase();
+          if (Object.prototype.hasOwnProperty.call(STATUS_MAP, lower)) normalized.estado_orden = STATUS_MAP[lower];
+          else if (!Number.isNaN(Number(t))) normalized.estado_orden = Number(t);
+          else normalized.estado = t; // fallback textual
+        }
+        // Campos string
+        normalized.direccion_envio = String(updatePayload.direccion_envio ?? '');
+  normalized.fecha_orden = String(updatePayload.fecha_orden ?? '');
+        normalized.ciudad_envio = String(updatePayload.ciudad_envio ?? '');
+        normalized.codigo_postal_envio = String(updatePayload.codigo_postal_envio ?? '');
+        normalized.pais_envio = String(updatePayload.pais_envio ?? '');
+        normalized.metodo_envio = String(updatePayload.metodo_envio ?? '');
+        normalized.estado_envio = String(updatePayload.estado_envio ?? '');
+        // numerics
+        normalized.costo_envio = Number(updatePayload.costo_envio ?? 0);
+        normalized.total_orden = Number(updatePayload.total_orden ?? 0);
+
+  if (typeof console !== 'undefined' && typeof console.debug === 'function') console.debug(`OrdenForm - updatePayload:`, updatePayload, 'normalized:', normalized);
+  await update(Number(id), normalized as Partial<Orden>);
         show({
           title: 'Orden actualizada',
           message: 'La orden se actualizó correctamente.',
           variant: 'success'
         });
+  // Informar a cualquier lista que escuche que debe recargar
+  try { window.dispatchEvent(new CustomEvent('ordenes:reload')); } catch { /* ignore */ }
         // Si hay ítems locales, ya deberían estar persistidos para una orden existente
       } else {
         // Crear orden y persistir ítems (si existen)
-        const createPayload = { ...baseData, fecha_orden: new Date().toISOString() };
+  const createPayload = { ...baseData, fecha_orden: new Date().toISOString() };
         const created = await ordenApi.createOrden(createPayload as Partial<Orden>);
         // persistir ítems asociados
         if (orderItems && orderItems.length) {
@@ -181,6 +226,8 @@ const OrdenForm = () => {
           console.warn('No se pudo recargar órdenes tras crear', e);
         }
         show({ title: 'Orden creada', message: 'La orden y sus ítems se guardaron correctamente.', variant: 'success' });
+  // Notificar recarga global para sincronizar listas
+  try { window.dispatchEvent(new CustomEvent('ordenes:reload')); } catch { /* ignore */ }
       }
       
       navigate('/ordenes');

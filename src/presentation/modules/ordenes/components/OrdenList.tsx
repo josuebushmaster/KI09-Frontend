@@ -29,6 +29,19 @@ const OrdenList = () => {
     loadClientes();
   }, [load, loadClientes]);
 
+  // Escuchar evento global para forzar recarga desde otros componentes (ej. formulario)
+  useEffect(() => {
+    const handler = () => {
+      try {
+        load();
+      } catch (e) {
+        console.warn('Error recargando ordenes desde evento global', e);
+      }
+    };
+    window.addEventListener('ordenes:reload', handler as EventListener);
+    return () => window.removeEventListener('ordenes:reload', handler as EventListener);
+  }, [load]);
+
   // Función para obtener nombre de cliente por ID
   const getClienteName = (id_cliente?: number): string => {
     if (!id_cliente) return 'Cliente desconocido';

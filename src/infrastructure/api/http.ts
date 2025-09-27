@@ -81,6 +81,17 @@ export async function http<T = unknown>(
       // ignore logging errors
     }
 
+      // Debug específico para órdenes: loguear payloads enviados en POST/PUT
+      try {
+        const urlStrDebug = String(config.url || '');
+        const m = String(config.method).toUpperCase();
+        if (urlStrDebug.includes('/ordenes') && (m === 'POST' || m === 'PUT' || m === 'PATCH')) {
+          if (import.meta.env.DEV) console.debug('🔍 HTTP DEBUG - /ordenes request', { method: m, url: urlStrDebug, body: config.data });
+        }
+      } catch {
+        /* ignore logging errors */
+      }
+
     // Limpieza del body: eliminar claves tipo ID (inline)
     try {
       const methodUp = String(config.method).toUpperCase();
@@ -147,6 +158,13 @@ export async function http<T = unknown>(
     }
 
     if (axios.isAxiosError(err)) {
+        try {
+          if (err.response?.status === 422) {
+            console.error('🔴 HTTP 422 response body:', err.response?.data);
+          }
+        } catch {
+          /* ignore */
+        }
       const data = err.response?.data as { detail?: string; message?: string } | null;
       const message = (data?.detail ?? data?.message) || err.message;
       const httpError: HttpError = new Error(String(message)) as HttpError;

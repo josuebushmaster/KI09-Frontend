@@ -6,8 +6,9 @@ type ApiOrden = {
   id_orden?: number;
   id_cliente?: number;
   fecha_orden?: string;
-  estado_orden?: string; // algunos backends usan 'estado'
-  estado?: string;
+  // Algunos backends usan 'estado' y pueden representar estados por id (number)
+  estado_orden?: string | number; // aceptamos number para enviar enums como número
+  estado?: string | number;
   direccion_envio?: string;
   total_orden?: number;  // algunos backends usan 'total'
   total?: number;
@@ -59,23 +60,24 @@ function toApi(payload: Partial<Orden>): Partial<ApiOrden> {
       cancelada: 5,
     };
 
+    const apiOut = out as ApiOrden & Record<string, unknown>;
     if (typeof raw === 'number') {
-      out.estado_orden = String(raw);
+      // enviar número
+      apiOut.estado_orden = raw;
     } else if (typeof raw === 'string') {
       const trimmed = raw.trim();
       const lower = trimmed.toLowerCase();
       if (Object.prototype.hasOwnProperty.call(STATUS_MAP, lower)) {
-        out.estado_orden = String(STATUS_MAP[lower]);
+        // mapear a id numérico
+        apiOut.estado_orden = STATUS_MAP[lower];
       } else if (!Number.isNaN(Number(trimmed))) {
-        out.estado_orden = String(Number(trimmed));
+        apiOut.estado_orden = Number(trimmed);
       } else {
-        // Can't interpret as numeric; send as `estado` textual alias so backend
-        // that supports text can handle it.
-        out.estado = trimmed;
+        // textual fallback
+        apiOut.estado = trimmed;
       }
     } else {
-      // Unknown shape; fallback to textual alias
-      out.estado = String(payload.estado_orden);
+      apiOut.estado = String(payload.estado_orden);
     }
   }
   if (payload.direccion_envio !== undefined) out.direccion_envio = payload.direccion_envio;
@@ -113,6 +115,7 @@ export async function getOrden(id: number): Promise<Orden> {
 export async function createOrden(payload: Partial<Orden>): Promise<Orden> {
   try {
     const apiPayload = toApi(payload);
+    if (typeof console !== 'undefined' && typeof console.debug === 'function') console.debug('OrdenApi.createOrden - payload:', apiPayload);
   // Use the plural endpoint for creation to match list endpoint and avoid 404s
   const data = await http<ApiOrden>('ordenes/', 'POST', apiPayload);
     return toDomain(data);
@@ -124,6 +127,7 @@ export async function createOrden(payload: Partial<Orden>): Promise<Orden> {
 export async function updateOrden(id: number, payload: Partial<Orden>): Promise<Orden> {
   try {
     const apiPayload = toApi(payload);
+    if (typeof console !== 'undefined' && typeof console.debug === 'function') console.debug(`OrdenApi.updateOrden ${id} - payload:`, apiPayload);
     const data = await http<ApiOrden>(`ordenes/${id}`, 'PUT', apiPayload);
     return toDomain(data);
   } catch (e) {
