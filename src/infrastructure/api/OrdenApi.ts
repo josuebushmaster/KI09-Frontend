@@ -57,6 +57,42 @@ function normalizeEstadoOrden(value: unknown): string {
   }
 }
 
+function normalizeFechaOrden(value: unknown): string {
+  const fallback = () => new Date().toISOString();
+
+  if (!value) return fallback();
+
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return fallback();
+    // Si viene en formato YYYY-MM-DD convertirlo a ISO manteniendo medianoche UTC
+    if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+      return `${trimmed}T00:00:00.000Z`;
+    }
+    // Si ya es ISO o similar, regresarlo tal cual
+    return trimmed;
+  }
+
+  try {
+    const parsed = new Date(String(value));
+    if (Number.isNaN(parsed.getTime())) {
+      return fallback();
+    }
+    return parsed.toISOString();
+  } catch {
+    return fallback();
+  }
+}
+
+function ensureNumber(value: unknown, defaultValue = 0): number {
+  const num = typeof value === 'number' ? value : Number(value ?? defaultValue);
+  return Number.isFinite(num) ? num : defaultValue;
+}
+
 function toDomain(api: ApiOrden): Orden {
   return {
     id_orden: Number(api.id_orden ?? 0),
@@ -81,21 +117,39 @@ function toApi(payload: Partial<Orden>): Partial<ApiOrden> {
   if (payload.id_cliente !== undefined) out.id_cliente = payload.id_cliente;
   const asRecord = payload as Partial<Record<string, unknown>>;
   if (asRecord['id_orden'] !== undefined) out.id_orden = Number(asRecord['id_orden'] as number);
-  if (payload.fecha_orden !== undefined) out.fecha_orden = payload.fecha_orden;
+  if (payload.fecha_orden !== undefined) out.fecha_orden = normalizeFechaOrden(payload.fecha_orden);
   if (payload.estado_orden !== undefined) {
     const normalizedEstado = normalizeEstadoOrden(payload.estado_orden);
     const apiOut = out as ApiOrden & Record<string, unknown>;
     apiOut.estado_orden = normalizedEstado;
     apiOut.estado = normalizedEstado;
   }
-  if (payload.direccion_envio !== undefined) out.direccion_envio = payload.direccion_envio;
-  if (payload.total_orden !== undefined) out.total_orden = payload.total_orden;
-  if (payload.ciudad_envio !== undefined) out.ciudad_envio = payload.ciudad_envio;
-  if (payload.codigo_postal_envio !== undefined) out.codigo_postal_envio = payload.codigo_postal_envio;
-  if (payload.pais_envio !== undefined) out.pais_envio = payload.pais_envio;
-  if (payload.metodo_envio !== undefined) out.metodo_envio = payload.metodo_envio;
-  if (payload.costo_envio !== undefined) out.costo_envio = payload.costo_envio;
-  if (payload.estado_envio !== undefined) out.estado_envio = payload.estado_envio;
+  if (payload.direccion_envio !== undefined) {
+    const trimmed = String(payload.direccion_envio ?? '').trim();
+    if (trimmed) out.direccion_envio = trimmed;
+  }
+  if (payload.total_orden !== undefined) out.total_orden = ensureNumber(payload.total_orden);
+  if (payload.ciudad_envio !== undefined) {
+    const trimmed = String(payload.ciudad_envio ?? '').trim();
+    if (trimmed) out.ciudad_envio = trimmed;
+  }
+  if (payload.codigo_postal_envio !== undefined) {
+    const trimmed = String(payload.codigo_postal_envio ?? '').trim();
+    if (trimmed) out.codigo_postal_envio = trimmed;
+  }
+  if (payload.pais_envio !== undefined) {
+    const trimmed = String(payload.pais_envio ?? '').trim();
+    if (trimmed) out.pais_envio = trimmed;
+  }
+  if (payload.metodo_envio !== undefined) {
+    const trimmed = String(payload.metodo_envio ?? '').trim();
+    if (trimmed) out.metodo_envio = trimmed;
+  }
+  if (payload.costo_envio !== undefined) out.costo_envio = ensureNumber(payload.costo_envio);
+  if (payload.estado_envio !== undefined) {
+    const trimmed = String(payload.estado_envio ?? '').trim();
+    if (trimmed) out.estado_envio = trimmed;
+  }
   return out;
 }
 

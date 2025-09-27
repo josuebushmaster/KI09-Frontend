@@ -1,0 +1,148 @@
+[33mcommit bbcc622275ca229dd13919809bf902435eeb75a8[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32msubir[m[33m, [m[1;31morigin/subir[m[33m)[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Sat Sep 27 11:23:52 2025 -0600
+
+    feat: normalizar estado de orden y mejorar manejo de errores en API
+
+[33mcommit 699e1e61966a00f2343996851dd64927feb47e13[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Sat Sep 27 11:02:01 2025 -0600
+
+    feat: mejorar la gestión de estados de orden y agregar recarga global en componentes
+
+[33mcommit 11d08f3ada716acddac33085d2ef40d91e70b1bc[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Sat Sep 27 10:39:55 2025 -0600
+
+    feat: implementar lógica de estado de orden y mejorar el proceso de checkout en la tienda
+
+[33mcommit f7d8e0b6d472b147bcfc017a95efe566cb9b28a1[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Sat Sep 27 10:22:10 2025 -0600
+
+    feat: mejorar compatibilidad de API y agregar filtros por fecha en la lista de órdenes
+
+[33mcommit b31e74150817bdb3b5789881cacb8a51746ca3a1[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Sat Sep 27 09:54:08 2025 -0600
+
+    feat(shop): agregar modal de vista rápida y mejorar la gestión de productos en la tienda
+
+[33mcommit e1a352ccc50708d2cf90eec25abf3cb8ae5e9eca[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Sat Sep 27 09:44:41 2025 -0600
+
+    feat(home): simplificar filtros y agregar métricas de ventas mensuales
+
+[33mcommit c47558af13735ab376913f124d87527837511605[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Sat Sep 27 09:26:57 2025 -0600
+
+    feat: Mejora de la interfaz de usuario y la funcionalidad en múltiples componentes
+    
+    - Actualizaciones de estilo para la barra de desplazamiento lateral en index.css para una mejor estética.
+    - Refactorización del gancho useToast para importar desde la ruta correcta.
+    - Actualizar las etiquetas del componente de la barra de navegación y mejorar los efectos de transición de la barra lateral.
+    - Modificar AstroChatPage para reemplazar el logotipo y mejorar el diseño para una mejor respuesta.
+    - Ampliar el componente Inicio con filtros adicionales para categorías, productos, pedidos, clientes y ventas, lo que mejora la gestión de datos y la experiencia del usuario.
+    - Añadir tarjetas compactas para clientes y ventas con opciones de filtrado para una mejor accesibilidad.
+    - Actualizar los enlaces de navegación y mejorar la consistencia general del diseño.
+
+[33mcommit a2f9c9b355fcd0a599e7a864fb7bdddfa7854dd1[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Sat Sep 27 00:59:59 2025 -0600
+
+    Característica: Implementar notificaciones emergentes para acciones de producto y mejorar la funcionalidad del carrito.
+    
+    - Se añadieron ToastProvider y el contexto de notificaciones emergentes para gestionarlas.
+    - Se integraron notificaciones emergentes en ProductCard para añadir artículos al carrito.
+    - Se mejoró el gancho useCart para rehidratar los artículos del carrito con información faltante del producto desde localStorage.
+    - Se actualizó ShopPage para gestionar la visibilidad del carrito y el modal de confirmación de compra.
+    - Se creó el componente TopBar para mostrar el resumen y las acciones del carrito.
+    - Se añadió AnalyticsPage para integrar informes de Looker Studio con validación y gestión de URL.
+    - Se refactorizó ProductCard para eliminar los indicadores de stock de la vista del cliente.
+    - Se mejoró la interfaz de usuario y la experiencia de usuario en todos los componentes de la tienda.
+
+[33mcommit 86f5adfbf36d57f67683ff1f7561e804859d1e32[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Fri Sep 26 23:35:22 2025 -0600
+
+    feat(shop): implementar página de tienda con carrito y gestión de productos
+
+[33mcommit 493abc20e3279c26383e6a7720333d7347ec30bc[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Fri Sep 26 23:12:59 2025 -0600
+
+    Añadir el componente Toast para mostrar mensajes temporales
+
+[33mcommit ee79a497348b1c6b0d0054ac98815244cf31596e[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Fri Sep 26 22:09:11 2025 -0600
+
+    feat(chat): actualizar nombre del asistente a Astra y mejorar mensajes de interfaz
+
+[33mcommit 1854c1a6e159916b7007e4fb8373bb5e5d08074f[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Fri Sep 26 22:01:37 2025 -0600
+
+    feat(chat): agregar renderizador inteligente para mostrar JSON de forma amigable
+
+[33mcommit 2057e430e716f5a1aa59d0635ab461db506082e4[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Fri Sep 26 21:57:35 2025 -0600
+
+    Feat: Incorporación de la función de chat de Astro con IA mediante la nueva integración de la API
+    
+    - Se añadieron las nuevas dependencias: react-markdown y remark-gfm para compatibilidad con Markdown.
+    - Se introdujo AstroChatPage para interacciones con IA, incluyendo una interfaz de chat.
+    - Se implementó el gancho useAstroChat para gestionar los mensajes de chat y las llamadas a la API.
+    - Se actualizó la barra de navegación para incluir un enlace a la nueva función de chat de Astro.
+    - Se modificó iaAPI para devolver respuestas de cadena sin formato desde el backend.
+    - Se mejoró OrdenForm para admitir la confirmación de pedidos con el método de pago.
+    - Se actualizó OrdenItemsManager para gestionar el estado local de los artículos y notificar al componente principal.
+
+[33mcommit db9141b26cc556b75c0f1af16c43b91cd4b2d8d8[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Fri Sep 26 20:15:11 2025 -0600
+
+    feat(ventas): implementar gestión de ventas con nuevas páginas, servicios y hooks
+    feat(ordenes): añadir gestión de ítems en órdenes y optimizar API de productos
+    refactor(ordenes): mejorar la estructura del formulario de órdenes y agregar manejo de total
+
+[33mcommit ccc485688f4eafc37c47297dac4641e5dbb7bc26[m[33m ([m[1;32mmaster[m[33m)[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Fri Sep 26 18:39:22 2025 -0600
+
+    feat(ordenes): unificar manejo de errores y agregar flujo de checkout para crear órdenes y confirmar ventas
+
+[33mcommit 61cb74569e33310a25d1a71dc6abe1e626d87873[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Fri Sep 26 14:49:30 2025 -0600
+
+    feat(ordenes): mejorar la gestión de órdenes con nuevas propiedades y optimización de la API
+
+[33mcommit dcb21dab510fe987cc135ca998e21859a0d28cb1[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Thu Sep 25 23:04:56 2025 -0600
+
+    feat(órdenes): Implementación del módulo de gestión de pedidos con funcionalidades de lista, creación y edición.
+    
+    - Se añadió el componente OrdenList para mostrar y gestionar pedidos.
+    - Se creó el gancho useOrdenes para gestionar las interacciones de la API relacionadas con los pedidos.
+    - Se implementaron OrdenCreatePage y OrdenEditPage para crear y editar pedidos.
+    - Se desarrolló el servicio ordenesService para las llamadas a la API relacionadas con los pedidos.
+    - Se añadió OrdenesPage como punto de entrada principal para la gestión de pedidos.
+    - Se incluyeron funciones de búsqueda y filtrado en la lista de pedidos.
+    - Se implementó el modo de confirmación para la eliminación de pedidos.
+
+[33mcommit 47ed2babebdd3bf152d36067ab268b2e4c4956e8[m
+Author: josuebushmaster <josue.pastil77@gmail.com>
+Date:   Thu Sep 25 22:44:05 2025 -0600
+
+    Refactorización de los componentes CategoriaList, ClienteList y ProductoList para mejorar la interfaz de usuario y la funcionalidad.
+    
+    - Se actualizó CategoriaList para usar iconos SVG en lugar de texto para una mejor representación visual.
+    - Se mejoró el diseño y el estilo de las tablas CategoriaList y ClienteList, incluyendo ajustes de diseño adaptable.
+    - Se implementó la funcionalidad de búsqueda y la persistencia del modo de vista en ProductoList.
+    - Se añadieron estados de carga y gestión de errores en ProductoList para una mejor experiencia de usuario.
+    - Se mejoró la accesibili

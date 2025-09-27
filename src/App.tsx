@@ -11,6 +11,7 @@ import { VentasPage } from './presentation/modules/ventas';
 import AstroChatPage from './presentation/modules/ia/pages/AstroChatPage';
 import { ShopPage } from './presentation/modules/shop';
 import { AnalyticsPage } from './presentation/modules/analytics';
+import { SistemaPage, UsuariosPage, RespaldosPage } from './presentation/modules/configuracion';
 
 // Placeholder components (reemplaza con tus componentes reales)
 const Productos = () => <ProductosPage />;
@@ -41,6 +42,9 @@ function App() {
             <Route path="/astro" element={<AstroChatPage />} />
             <Route path="/tienda" element={<ShopPage />} />
             <Route path="/analisis" element={<AnalyticsPage />} />
+            <Route path="/configuracion" element={<SistemaPage />} />
+            <Route path="/usuarios" element={<UsuariosPage />} />
+            <Route path="/backup" element={<RespaldosPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
           </ErrorBoundary>
