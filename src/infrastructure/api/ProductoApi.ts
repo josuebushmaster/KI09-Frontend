@@ -51,8 +51,8 @@ function toApi(payload: Partial<Producto>): Partial<ApiProducto> {
   return out;
 }
 
-export async function listProductos(): Promise<Producto[]> {
-  const data = await http<ApiProducto[]>('productos/');
+export async function listProductos(signal?: AbortSignal): Promise<Producto[]> {
+  const data = await http<ApiProducto[]>('productos/', 'GET', undefined, signal);
   if (!Array.isArray(data)) return [];
   const mapped = data.map(toDomain).filter((x): x is Producto => x !== null);
   if (mapped.length !== data.length) {

@@ -122,6 +122,15 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
           ),
         },
         {
+          path: '/tienda',
+          label: 'Tienda',
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7.5h18M5.25 7.5V6A2.25 2.25 0 0 1 7.5 3.75h9A2.25 2.25 0 0 1 18.75 6v1.5m-12 0-1.443 8.658A2.25 2.25 0 0 0 7.53 18.75h8.94a2.25 2.25 0 0 0 2.223-2.592L17.25 7.5m-6.75 3.75v5.25m3-5.25v5.25" />
+            </svg>
+          ),
+        },
+        {
           path: '/categorias',
           label: 'Categorías',
           icon: (
