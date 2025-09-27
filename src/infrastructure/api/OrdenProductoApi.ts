@@ -2,7 +2,6 @@ import { http } from './http';
 import type { OrdenProducto } from '../../domain/entities';
 
 type ApiOrdenProducto = {
-  _id_ordenProd?: number;
   id_ordenProd?: number;
   id_orden?: number;
   id_producto?: number;
@@ -14,7 +13,7 @@ type ApiOrdenProducto = {
 
 function toDomain(api: ApiOrdenProducto): OrdenProducto {
   return {
-    id_ordenProd: api._id_ordenProd ?? api.id_ordenProd ?? 0,
+    id_ordenProd: api.id_ordenProd ?? 0,
     id_orden: api.id_orden ?? 0,
     id_producto: api.id_producto ?? 0,
     cantidad: api.cantidad ?? 0,
@@ -34,29 +33,35 @@ function toApi(payload: Partial<OrdenProducto>): Partial<ApiOrdenProducto> {
 }
 
 export async function listOrdenProductos(): Promise<OrdenProducto[]> {
-  const data = await http<ApiOrdenProducto[]>('ordenproductos/');
+  const data = await http<ApiOrdenProducto[]>('orden-producto/');
   return Array.isArray(data) ? data.map(toDomain) : [];
 }
 
 export async function getOrdenProducto(id: number): Promise<OrdenProducto> {
-  const data = await http<ApiOrdenProducto>(`ordenproductos/${id}`);
+  const data = await http<ApiOrdenProducto>(`orden-producto/${id}`);
   return toDomain(data);
 }
 
 export async function createOrdenProducto(payload: Partial<OrdenProducto>): Promise<OrdenProducto> {
   const apiPayload = toApi(payload);
-  const data = await http<ApiOrdenProducto>('ordenproductos/', 'POST', apiPayload);
+  const data = await http<ApiOrdenProducto>('orden-producto/', 'POST', apiPayload);
   return toDomain(data);
 }
 
 export async function updateOrdenProducto(id: number, payload: Partial<OrdenProducto>): Promise<OrdenProducto> {
   const apiPayload = toApi(payload);
-  const data = await http<ApiOrdenProducto>(`ordenproductos/${id}`, 'PUT', apiPayload);
+  const data = await http<ApiOrdenProducto>(`orden-producto/${id}`, 'PUT', apiPayload);
   return toDomain(data);
 }
 
 export async function deleteOrdenProducto(id: number): Promise<void> {
-  await http<void>(`ordenproductos/${id}`, 'DELETE');
+  await http<void>(`orden-producto/${id}`, 'DELETE');
+}
+
+// Listar ítems por orden: GET /orden-producto/orden/{id_orden}
+export async function listOrdenProductosByOrden(id_orden: number): Promise<OrdenProducto[]> {
+  const data = await http<ApiOrdenProducto[]>(`orden-producto/orden/${id_orden}`);
+  return Array.isArray(data) ? data.map(toDomain) : [];
 }
 
 export default {};

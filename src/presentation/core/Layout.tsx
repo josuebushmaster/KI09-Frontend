@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from './Navbar';
 
 interface LayoutProps {
@@ -6,11 +7,26 @@ interface LayoutProps {
 }
 
 const Layout = ({ children }: LayoutProps) => {
+  const [isMobile, setIsMobile] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+
+    checkScreenSize();
+    window.addEventListener('resize', checkScreenSize);
+    return () => window.removeEventListener('resize', checkScreenSize);
+  }, []);
+
   return (
-  <div className="min-h-screen bg-gray-100">
-      <Navbar />
-      <main className="container mx-auto p-4">
-        {children}
+    <div className="min-h-screen bg-gray-50 flex">
+      <Navbar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
+      <main className={`flex-1 transition-all duration-300 ${isMobile ? 'ml-0' : (isCollapsed ? 'ml-16' : 'ml-64')}`}>
+        <div className={`p-6 ${isMobile ? 'pt-20' : ''}`}>
+          {children}
+        </div>
       </main>
     </div>
   );
