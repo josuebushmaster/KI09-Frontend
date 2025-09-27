@@ -86,7 +86,7 @@ export async function http<T = unknown>(
       const methodUp = String(config.method).toUpperCase();
       // Skip ID cleanup for orders-related endpoints to preserve foreign keys (id_cliente, id_orden, id_producto)
       const urlStr = String(config.url);
-      const isOrdenFlow = urlStr.includes('/ordenes') || urlStr.endsWith('/orden') || urlStr.includes('/orden-producto') || urlStr.includes('/ventas');
+  const isOrdenFlow = urlStr.includes('/ordenes') || urlStr.endsWith('/orden') || urlStr.includes('/orden-producto') || urlStr.includes('/ordenproductos') || urlStr.includes('/ventas');
       if (!isOrdenFlow && (methodUp === 'POST' || methodUp === 'PUT' || methodUp === 'PATCH')) {
         const bodyObj = config.data as Record<string, unknown> | undefined;
         if (bodyObj && typeof bodyObj === 'object' && !(bodyObj instanceof FormData)) {

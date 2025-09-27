@@ -6,11 +6,12 @@ import './App.css';
 import { ProductosPage, ProductoCreatePage, ProductoEditPage } from './presentation/modules/producto';
 import { ClientesPage, ClienteCreatePage, ClienteEditPage } from './presentation/modules/clientes';
 import { OrdenesPage, OrdenCreatePage, OrdenEditPage } from './presentation/modules/ordenes';
+import { VentasPage } from './presentation/modules/ventas';
 
 // Placeholder components (reemplaza con tus componentes reales)
 const Productos = () => <ProductosPage />;
 const Clientes = () => <ClientesPage />;
-const Ventas = () => <div className="p-4"><h1 className="text-2xl font-bold">Ventas</h1><p>Aquí irá el reporte de ventas</p></div>;
+// Reemplazado por VentasPage real
 
 function App() {
   return (
@@ -31,7 +32,7 @@ function App() {
             <Route path="/clientes" element={<Clientes />} />
             <Route path="/clientes/create" element={<ClienteCreatePage />} />
             <Route path="/clientes/:id/edit" element={<ClienteEditPage />} />
-            <Route path="/ventas" element={<Ventas />} />
+            <Route path="/ventas" element={<VentasPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </ErrorBoundary>

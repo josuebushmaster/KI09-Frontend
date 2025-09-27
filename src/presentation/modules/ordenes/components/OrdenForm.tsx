@@ -5,6 +5,7 @@ import { getOrden } from '../services/ordenesService';
 import { useClientes } from '../../clientes';
 import type { Orden } from '../../../../domain/entities/Orden';
 import { useStatus } from '../../../core';
+import OrdenItemsManager from './OrdenItemsManager';
 
 interface OrdenFormData {
   id_cliente: number;
@@ -42,6 +43,7 @@ const OrdenForm = () => {
   });
 
   const [errors, setErrors] = useState<Partial<OrdenFormData>>({});
+  const [itemsTotal, setItemsTotal] = useState<number | null>(null);
 
   useEffect(() => {
     loadClientes();
@@ -96,6 +98,13 @@ const OrdenForm = () => {
     ensureOrden();
     return () => { cancelled = true; };
   }, [id, isEdit, ordenes, show]);
+
+  // Si los ítems calculan un total, actualizamos el campo del formulario (pero permitimos override manual)
+  useEffect(() => {
+    if (itemsTotal !== null) {
+      setFormData(prev => ({ ...prev, total_orden: itemsTotal }));
+    }
+  }, [itemsTotal]);
 
   const validateForm = (): boolean => {
     const newErrors: Partial<OrdenFormData> = {};
@@ -462,6 +471,9 @@ const OrdenForm = () => {
                 {errors.total_orden !== undefined && (
                   <p className="text-xs text-red-600 mt-1">El total debe ser mayor a 0</p>
                 )}
+              </div>
+              <div className="md:col-span-2">
+                <OrdenItemsManager id_orden={isEdit && id ? Number(id) : undefined} onChangeTotal={(t) => setItemsTotal(t)} />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
