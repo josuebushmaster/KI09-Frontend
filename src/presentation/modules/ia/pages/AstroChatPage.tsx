@@ -160,24 +160,20 @@ export default function AstroChatPage() {
         {/* Header */}
         <div className="rounded-xl bg-white/5 border border-white/10 backdrop-blur-md p-4 flex items-center justify-between">
           <div>
-            <h1 className="text-white font-bold text-xl">Astro — Asistente IA</h1>
-            <p className="text-white/70 text-sm">Consulta de negocio para CEO/Admin.</p>
+            <h1 className="text-white font-bold text-xl">Astra — Asistente IA</h1>
+            <p className="text-white/70 text-sm">Respuestas claras y accionables para decisiones rápidas.</p>
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => copy(messages.map(m => `${m.role === 'user' ? 'Yo' : 'Astro'}: ${m.content}`).join('\n\n'))}
+              onClick={() => copy(messages.map(m => `${m.role === 'user' ? 'Yo' : 'Astra'}: ${m.content}`).join('\n\n'))}
               className="text-sm px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20"
             >Copiar conversación</button>
-            <button
-              onClick={clear}
-              className="text-sm px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-white border border-white/20"
-            >Limpiar</button>
           </div>
         </div>
 
         {/* Sugerencias */}
         <div className="flex flex-wrap gap-2">
-          {suggestions.map(s => (
+            {suggestions.map(s => (
             <button
               key={s}
               disabled={loading}
@@ -209,24 +205,31 @@ export default function AstroChatPage() {
             ))}
 
             {loading && (
-              <div className="text-white/80 text-sm">Astro está pensando…</div>
+              <div className="text-white/80 text-sm">Astra está procesando tu consulta…</div>
             )}
           </div>
 
           {/* Composer */}
-          <form onSubmit={onSubmit} className="border-t border-white/10 p-3 flex gap-2">
+          <form onSubmit={onSubmit} className="border-t border-white/10 p-3 flex items-center gap-2">
             <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               rows={2}
-              placeholder="Escribe tu consulta y presiona Enter"
+              placeholder="Escribe tu consulta para Astra y presiona Enter"
               className="flex-1 resize-none rounded-lg border border-white/20 bg-white/10 text-white placeholder-white/60 px-3 py-2 outline-none focus:ring-2 focus:ring-red-400/30"
             />
-            <button
-              type="submit"
-              disabled={!canSend}
-              className="rounded-lg px-4 py-2 bg-red-600 text-white disabled:opacity-50"
-            >Enviar</button>
+            <div className="flex items-center gap-2">
+              <button
+                type="submit"
+                disabled={!canSend}
+                className="rounded-lg px-4 py-2 bg-red-600 text-white disabled:opacity-50"
+              >Enviar</button>
+              <button
+                type="button"
+                onClick={clear}
+                className="rounded-lg px-3 py-2 bg-white/10 text-white border border-white/20 hover:bg-white/20"
+              >Limpiar</button>
+            </div>
           </form>
         </div>
       </div>
