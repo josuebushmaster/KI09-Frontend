@@ -5,6 +5,8 @@ import { listCategorias } from '../../../../infrastructure/api/CategoriaApi';
 import { CartProvider, useCart } from '../hooks/useCart';
 import ProductCard from '../components/ProductCard';
 import CartPanel from '../components/CartPanel';
+import { checkoutOrden, type CartItem as OrdenCartItem } from '../../ordenes/services/ordenesService';
+import type { Orden } from '../../../../domain/entities/Orden';
 import { formatCurrency } from '../../../../utils/currency';
 
 import TopBar from '../components/TopBar';
@@ -125,13 +127,46 @@ function ShopPageInner() {
   };
 
   const handleCheckoutOpen = () => setShowCheckoutModal(true);
-  const handleCheckoutConfirm = () => {
-    clear();
-    setShowCheckoutModal(false);
-    setShowCartDesktop(false);
-    setShowCartOnMobile(false);
-    setOrderConfirmed(true);
-    setTimeout(() => setOrderConfirmed(false), 3500);
+  const handleCheckoutConfirm = async () => {
+    // Perform backend checkout: create orden, add items, confirm venta.
+    if (items.length === 0) return;
+    try {
+      // Map cart items to the DTO expected by the orden service
+      const dtoItems: OrdenCartItem[] = items.map((i) => ({
+        id_producto: i.productId,
+        cantidad: i.quantity,
+        precio_unitario: i.price,
+      }));
+
+      const cabecera: Omit<Orden, 'id_orden' | 'total_orden' | 'created_at' | 'updated_at'> = {
+        // If you have a logged-in customer id, replace 0 with that value
+        id_cliente: 0,
+        fecha_orden: new Date().toISOString(),
+        estado_orden: 'Pendiente',
+        direccion_envio: '',
+        ciudad_envio: '',
+        codigo_postal_envio: '',
+        pais_envio: '',
+        metodo_envio: '',
+        costo_envio: 0,
+        estado_envio: '',
+      };
+
+  const result = await checkoutOrden(cabecera, dtoItems, 'Efectivo');
+      console.debug('Checkout result:', result);
+
+      // Clear cart and update UI only after successful backend confirmation
+      clear();
+      setShowCheckoutModal(false);
+      setShowCartDesktop(false);
+      setShowCartOnMobile(false);
+      setOrderConfirmed(true);
+      setTimeout(() => setOrderConfirmed(false), 3500);
+    } catch (err) {
+      console.error('Error en checkout:', err);
+      // Keep the cart intact so user can retry; show console and optionally a toast
+      alert('Error al procesar el pedido. Revisa la consola para más detalles.');
+    }
   };
 
   return (

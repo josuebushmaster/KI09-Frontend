@@ -44,7 +44,40 @@ function toApi(payload: Partial<Orden>): Partial<ApiOrden> {
   const out: Partial<ApiOrden> = {};
   if (payload.id_cliente !== undefined) out.id_cliente = payload.id_cliente;
   if (payload.fecha_orden !== undefined) out.fecha_orden = payload.fecha_orden;
-  if (payload.estado_orden !== undefined) out.estado_orden = payload.estado_orden;
+  if (payload.estado_orden !== undefined) {
+    // Some backends store order state as an integer (enum/lookup). Map common
+    // human-readable labels to integers before sending. If we can't map and the
+    // value is numeric-like, send it as number. Otherwise, send the textual
+    // status under `estado` so backend logic that accepts strings can consume it.
+    const raw = payload.estado_orden as unknown;
+
+    const STATUS_MAP: Record<string, number> = {
+      pendiente: 1,
+      confirmada: 2,
+      procesando: 3,
+      completada: 4,
+      cancelada: 5,
+    };
+
+    if (typeof raw === 'number') {
+      out.estado_orden = String(raw);
+    } else if (typeof raw === 'string') {
+      const trimmed = raw.trim();
+      const lower = trimmed.toLowerCase();
+      if (Object.prototype.hasOwnProperty.call(STATUS_MAP, lower)) {
+        out.estado_orden = String(STATUS_MAP[lower]);
+      } else if (!Number.isNaN(Number(trimmed))) {
+        out.estado_orden = String(Number(trimmed));
+      } else {
+        // Can't interpret as numeric; send as `estado` textual alias so backend
+        // that supports text can handle it.
+        out.estado = trimmed;
+      }
+    } else {
+      // Unknown shape; fallback to textual alias
+      out.estado = String(payload.estado_orden);
+    }
+  }
   if (payload.direccion_envio !== undefined) out.direccion_envio = payload.direccion_envio;
   if (payload.total_orden !== undefined) out.total_orden = payload.total_orden;
   if (payload.ciudad_envio !== undefined) out.ciudad_envio = payload.ciudad_envio;
@@ -80,8 +113,8 @@ export async function getOrden(id: number): Promise<Orden> {
 export async function createOrden(payload: Partial<Orden>): Promise<Orden> {
   try {
     const apiPayload = toApi(payload);
-    // Endpoint real para crear: POST /orden (singular)
-    const data = await http<ApiOrden>('orden', 'POST', apiPayload);
+  // Use the plural endpoint for creation to match list endpoint and avoid 404s
+  const data = await http<ApiOrden>('ordenes/', 'POST', apiPayload);
     return toDomain(data);
   } catch (e) {
     throw parseApiError(e);
