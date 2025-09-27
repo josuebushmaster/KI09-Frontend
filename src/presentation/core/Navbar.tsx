@@ -131,6 +131,16 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
           ),
         },
         {
+          path: '/analisis',
+          label: 'Analíticas',
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v18h18" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7 14l3-6 3 4 4-8 3 12" />
+            </svg>
+          ),
+        },
+        {
           path: '/categorias',
           label: 'Categorías',
           icon: (

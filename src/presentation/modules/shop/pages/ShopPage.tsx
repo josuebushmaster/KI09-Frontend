@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Producto } from '../../../../domain/entities';
 import { listProductos } from '../../../../infrastructure/api/ProductoApi';
 import { listCategorias } from '../../../../infrastructure/api/CategoriaApi';
@@ -6,6 +6,8 @@ import { CartProvider, useCart } from '../hooks/useCart';
 import ProductCard from '../components/ProductCard';
 import CartPanel from '../components/CartPanel';
 import { formatCurrency } from '../../../../utils/currency';
+
+import TopBar from '../components/TopBar';
 
 type CategoriaMap = Record<number, string>;
 
@@ -20,6 +22,10 @@ function ShopPageInner() {
   const [categoryFilter, setCategoryFilter] = useState<number | 'all'>('all');
   const [onlyAvailable, setOnlyAvailable] = useState(true);
   const [showCartOnMobile, setShowCartOnMobile] = useState(false);
+  const [showCartDesktop, setShowCartDesktop] = useState(false);
+  const [showCheckoutModal, setShowCheckoutModal] = useState(false);
+  const [orderConfirmed, setOrderConfirmed] = useState(false);
+  const cartPanelRef = useRef<HTMLDivElement>(null);
 
   const { items, addItem, updateQuantity, removeItem, clear, summary, getItemQuantity } = useCart();
 
@@ -39,9 +45,7 @@ function ShopPageInner() {
         setProducts(productList);
         const map: CategoriaMap = {};
         categorias.forEach((categoria) => {
-          if (categoria.id_categoria !== undefined) {
-            map[categoria.id_categoria] = categoria.nombre;
-          }
+          if (categoria.id_categoria !== undefined) map[categoria.id_categoria] = categoria.nombre;
         });
         setCategoryMap(map);
         setStatus('success');
@@ -54,7 +58,6 @@ function ShopPageInner() {
     }
 
     fetchResources();
-
     return () => {
       active = false;
       controller.abort();
@@ -76,13 +79,13 @@ function ShopPageInner() {
     });
   }, [products, categoryFilter, onlyAvailable, searchTerm]);
 
-  const totalInventoryValue = useMemo(() => {
-    return products.reduce((acc, product) => {
-      const price = Number.isFinite(product.precio) ? Number(product.precio) : 0;
-      const stock = typeof product.stock === 'number' && product.stock > 0 ? product.stock : 1;
-      return acc + price * stock;
-    }, 0);
-  }, [products]);
+  const handleCartAccess = () => {
+    if (typeof window !== 'undefined' && window.matchMedia('(max-width: 767px)').matches) {
+      setShowCartOnMobile(true);
+      return;
+    }
+    setShowCartDesktop((s) => !s);
+  };
 
   const handleAddProduct = (product: Producto) => {
     const availableStock = typeof product.stock === 'number' ? product.stock : undefined;
@@ -99,51 +102,89 @@ function ShopPageInner() {
 
   const handleDecrement = (productId: number) => {
     const currentQuantity = items.find((item) => item.productId === productId)?.quantity ?? 0;
-    if (currentQuantity <= 1) {
-      removeItem(productId);
-      return;
-    }
+    if (currentQuantity <= 1) return removeItem(productId);
     updateQuantity(productId, currentQuantity - 1);
   };
 
+  const handleCheckoutOpen = () => setShowCheckoutModal(true);
+  const handleCheckoutConfirm = () => {
+    clear();
+    setShowCheckoutModal(false);
+    setShowCartDesktop(false);
+    setShowCartOnMobile(false);
+    setOrderConfirmed(true);
+    setTimeout(() => setOrderConfirmed(false), 3500);
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#faf5ff] via-white to-[#fef2f2] py-10">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 md:flex-row">
+    <div className="min-h-screen bg-neutral-50">
+      <TopBar
+        total={summary.total}
+        totalItems={summary.totalItems}
+        onCartClick={handleCartAccess}
+        onClearCart={clear}
+        customerName="Cliente"
+        actions={(
+          <a
+            href="mailto:soporte@ki09.com"
+            className="inline-flex items-center justify-center rounded-xl border border-transparent bg-white px-4 py-2 text-sm font-semibold text-red-600 transition hover:bg-red-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+          >
+            Contactar soporte
+          </a>
+        )}
+      />
+
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 pb-16 pt-8 md:flex-row">
         <main className="flex-1 space-y-8">
-          <section className="rounded-3xl bg-neutral-900 px-8 py-10 text-white shadow-2xl">
-            <h1 className="text-2xl font-bold md:text-3xl">Explora y arma el carrito perfecto para tu cliente</h1>
-            <p className="mt-2 max-w-3xl text-sm text-neutral-200 md:text-base">
-              Catálogo seguro pensado para equipos de ventas. Agrega productos, controla cantidades y construye una pre-orden lista para cerrar.
-            </p>
-            <div className="mt-6 grid gap-4 text-xs uppercase tracking-wide text-neutral-200 md:grid-cols-3">
-              <div className="rounded-2xl border border-white/20 bg-white/10 p-4">
-                <p className="text-[0.65rem] text-neutral-300">Artículos disponibles</p>
-                <p className="mt-1 text-xl font-semibold">{products.length}</p>
+          <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="rounded-2xl border border-neutral-200 bg-white px-5 py-4 shadow-sm">
+              <div className="flex items-center justify-between text-xs uppercase tracking-wide text-neutral-500">
+                <span>Productos disponibles</span>
+                <span role="img" aria-label="Productos">🧺</span>
               </div>
-              <div className="rounded-2xl border border-white/20 bg-white/10 p-4">
-                <p className="text-[0.65rem] text-neutral-300">Valor total inventario</p>
-                <p className="mt-1 text-xl font-semibold">{formatCurrency(totalInventoryValue)}</p>
+              <p className="mt-2 text-2xl font-semibold text-neutral-900">{filteredProducts.length}</p>
+              <p className="text-xs text-neutral-400">Resultados visibles según tus filtros.</p>
+            </div>
+
+            <div className="rounded-2xl border border-neutral-200 bg-white px-5 py-4 shadow-sm">
+              <div className="flex items-center justify-between text-xs uppercase tracking-wide text-neutral-500">
+                <span>Categorías</span>
+                <span role="img" aria-label="Categorías">🏷️</span>
               </div>
-              <div className="rounded-2xl border border-white/20 bg-white/10 p-4">
-                <p className="text-[0.65rem] text-neutral-300">Productos en carrito</p>
-                <p className="mt-1 text-xl font-semibold">{summary.totalItems}</p>
-              </div>
+              <p className="mt-2 text-2xl font-semibold text-neutral-900">{Object.keys(categoryMap).length}</p>
+              <p className="text-xs text-neutral-400">Explora diferentes familias de productos.</p>
             </div>
           </section>
 
-          <section className="rounded-3xl border border-white/60 bg-white/70 p-6 shadow-lg backdrop-blur md:p-7">
+          <section className="rounded-3xl border border-neutral-200 bg-white/80 p-6 shadow-md backdrop-blur">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div className="flex flex-1 items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3 shadow-sm">
-                <span className="text-neutral-400">🔍</span>
-                <input
-                  type="search"
-                  placeholder="Buscar por nombre o descripción"
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  className="w-full bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none"
-                />
+              <div>
+                <h2 className="text-lg font-semibold text-neutral-900">Catálogo de productos</h2>
+                <p className="text-sm text-neutral-500">Encuentra artículos por nombre, categoría o disponibilidad.</p>
               </div>
-              <div className="flex flex-wrap gap-2 md:justify-end">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="flex flex-1 items-center gap-3 rounded-2xl border border-neutral-200 bg-white px-4 py-3 shadow-sm">
+                  <span className="text-neutral-400">🔍</span>
+                  <input
+                    type="search"
+                    placeholder="Buscar por nombre o descripción"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    className="w-full bg-transparent text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCartAccess}
+                  className="inline-flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-400 md:hidden"
+                >
+                  🛒 Ver carrito ({summary.totalItems})
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-wrap gap-2">
                 <select
                   value={categoryFilter}
                   onChange={(event) => {
@@ -169,13 +210,6 @@ function ShopPageInner() {
                   />
                   Solo disponibles
                 </label>
-                <button
-                  type="button"
-                  onClick={() => setShowCartOnMobile(true)}
-                  className="inline-flex items-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-2 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-400 md:hidden"
-                >
-                  🛒 Ver carrito ({summary.totalItems})
-                </button>
               </div>
             </div>
 
@@ -208,20 +242,26 @@ function ShopPageInner() {
           </section>
         </main>
 
-        <div className="md:sticky md:top-10 md:h-[calc(100vh-5rem)] md:w-[26rem]">
+        <div ref={cartPanelRef} className="md:sticky md:top-24 md:h-[calc(100vh-6rem)]">
           <div className="hidden md:block">
-            <CartPanel
-              items={items}
-              summary={summary}
-              onUpdateQuantity={updateQuantity}
-              onRemove={removeItem}
-              onClear={clear}
-              onCheckout={() => alert('Integración pendiente: envía el pedido al backend o genera la orden.')}
-            />
+            {showCartDesktop ? (
+              <div className="md:w-72">
+                <CartPanel
+                  items={items}
+                  summary={summary}
+                  onUpdateQuantity={updateQuantity}
+                  onRemove={removeItem}
+                  onClear={clear}
+                  onCheckout={handleCheckoutOpen}
+                  onClose={() => setShowCartDesktop(false)}
+                  showCheckout
+                />
+              </div>
+            ) : null}
           </div>
 
           <div
-            className={`fixed inset-y-0 right-0 z-50 flex w-full max-w-sm flex-col border-l border-red-200/80 bg-white/95 p-4 shadow-2xl transition-transform duration-300 md:hidden ${
+            className={`fixed inset-y-0 right-0 z-50 flex w-full max-w-xs flex-col border-l border-neutral-200 bg-white/95 p-4 shadow-2xl transition-transform duration-300 md:hidden ${
               showCartOnMobile ? 'translate-x-0' : 'translate-x-full'
             }`}
             role="dialog"
@@ -234,16 +274,39 @@ function ShopPageInner() {
               onRemove={removeItem}
               onClear={clear}
               onClose={() => setShowCartOnMobile(false)}
-              onCheckout={() => alert('Integración pendiente: envía el pedido al backend o genera la orden.')}
+              onCheckout={handleCheckoutOpen}
               open={showCartOnMobile}
+              showCheckout
             />
           </div>
+
           {showCartOnMobile && (
             <div
               className="fixed inset-0 z-40 bg-neutral-900/50 md:hidden"
               role="presentation"
               onClick={() => setShowCartOnMobile(false)}
             />
+          )}
+
+          {showCheckoutModal && (
+            <div className="fixed inset-0 z-60 flex items-center justify-center">
+              <div className="fixed inset-0 bg-black/40" onClick={() => setShowCheckoutModal(false)} />
+              <div className="z-70 w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+                <h3 className="text-lg font-semibold text-neutral-900">Confirmar pedido</h3>
+                <p className="mt-3 text-sm text-neutral-600">Vas a confirmar un pedido por {summary.totalItems} artículo{summary.totalItems === 1 ? '' : 's'}.</p>
+                <div className="mt-4 text-sm text-neutral-700">Total estimado: <span className="font-semibold">{formatCurrency(summary.total)}</span></div>
+                <div className="mt-6 flex justify-end gap-3">
+                  <button onClick={() => setShowCheckoutModal(false)} className="rounded-xl border border-neutral-200 px-4 py-2">Cancelar</button>
+                  <button onClick={handleCheckoutConfirm} className="rounded-xl bg-red-600 px-4 py-2 text-white">Confirmar</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {orderConfirmed && (
+            <div className="fixed right-6 bottom-6 z-70 rounded-lg bg-emerald-600 px-4 py-3 text-white shadow-lg">
+              Pedido confirmado ✔️
+            </div>
           )}
         </div>
       </div>
@@ -255,10 +318,7 @@ function ProductSkeletonGrid() {
   return (
     <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: 6 }).map((_, index) => (
-        <div
-          key={index}
-          className="h-72 animate-pulse rounded-2xl border border-neutral-200 bg-white/70"
-        />
+        <div key={index} className="h-72 animate-pulse rounded-2xl border border-neutral-200 bg-white/70" />
       ))}
     </div>
   );
@@ -291,3 +351,4 @@ export default function ShopPage() {
     </CartProvider>
   );
 }
+ 

@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Layout, ErrorBoundary, NotFoundPage } from './presentation/core';
+import { ToastProvider } from './presentation/common/ToastProvider';
 import { CategoriasPage, CategoriasCreatePage, CategoriasEditPage } from './presentation/modules/categorias';
 import Home from './presentation/pages/home/index';
 import './App.css';
@@ -9,6 +10,7 @@ import { OrdenesPage, OrdenCreatePage, OrdenEditPage } from './presentation/modu
 import { VentasPage } from './presentation/modules/ventas';
 import AstroChatPage from './presentation/modules/ia/pages/AstroChatPage';
 import { ShopPage } from './presentation/modules/shop';
+import { AnalyticsPage } from './presentation/modules/analytics';
 
 // Placeholder components (reemplaza con tus componentes reales)
 const Productos = () => <ProductosPage />;
@@ -18,8 +20,9 @@ const Clientes = () => <ClientesPage />;
 function App() {
   return (
     <Router>
-      <Layout>
-        <ErrorBoundary>
+      <ToastProvider>
+        <Layout>
+          <ErrorBoundary>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/categorias" element={<CategoriasPage />} />
@@ -37,10 +40,12 @@ function App() {
             <Route path="/ventas" element={<VentasPage />} />
             <Route path="/astro" element={<AstroChatPage />} />
             <Route path="/tienda" element={<ShopPage />} />
+            <Route path="/analisis" element={<AnalyticsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
-        </ErrorBoundary>
-      </Layout>
+          </ErrorBoundary>
+        </Layout>
+      </ToastProvider>
     </Router>
   );
 }

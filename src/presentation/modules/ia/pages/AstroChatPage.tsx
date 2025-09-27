@@ -184,8 +184,7 @@ export default function AstroChatPage() {
 
   const suggestions = [
     'Pregúntale a Astra sobre el resumen de ventas del día',
-    'Pregúntale a Astra por las órdenes pendientes por estado',
-    'Pregúntale a Astra por el top 5 de productos más vendidos este mes',
+    
   ];
 
   useEffect(() => {

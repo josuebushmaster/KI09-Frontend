@@ -1,6 +1,7 @@
-import { createContext, useContext, useEffect, useMemo, useReducer } from 'react';
+import { createContext, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
 import type { ReactNode } from 'react';
 import type { Producto } from '../../../../domain/entities';
+import { getProducto } from '../../../../infrastructure/api/ProductoApi';
 import { clampQuantity } from '../../../../utils/currency';
 
 export type CartItem = {
@@ -21,6 +22,7 @@ type CartAction =
   | { type: 'ADD_ITEM'; payload: { product: Producto; quantity?: number } }
   | { type: 'REMOVE_ITEM'; payload: { productId: number } }
   | { type: 'UPDATE_QUANTITY'; payload: { productId: number; quantity: number } }
+  | { type: 'REHYDRATE'; payload: { items: CartItem[] } }
   | { type: 'CLEAR' };
 
 const MAX_PER_ITEM = 99;
@@ -89,6 +91,9 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     }
     case 'CLEAR':
       return { items: [] };
+      case 'REHYDRATE': {
+        return { items: action.payload.items };
+      }
     default:
       return state;
   }
@@ -147,6 +152,51 @@ export function CartProvider({ children }: { children: ReactNode }) {
     const payload = JSON.stringify({ items: state.items });
     window.localStorage.setItem(STORAGE_KEY, payload);
   }, [state.items]);
+
+  // Rehydrate: try to complete missing product info for items loaded from localStorage
+  const rehydratedRef = useRef(false);
+  useEffect(() => {
+    if (rehydratedRef.current) return;
+    rehydratedRef.current = true;
+    const missingIds = state.items
+      .filter((i) => !i.name || i.name === 'Producto' || i.name === 'Producto sin nombre')
+      .map((i) => i.productId);
+    if (missingIds.length === 0) return;
+    let active = true;
+    const controller = new AbortController();
+    (async () => {
+      try {
+        const results = await Promise.allSettled(missingIds.map((id) => getProducto(id)));
+        if (!active) return;
+        const idToProduct = new Map<number, Producto>();
+        results.forEach((r) => {
+          if (r.status === 'fulfilled') idToProduct.set(r.value.id_producto, r.value);
+        });
+        const merged = state.items.map((item) => {
+          const prod = idToProduct.get(item.productId);
+          if (!prod) return item;
+          const normalized = normalizeProduct(prod, item.quantity);
+          return {
+            ...item,
+            name: normalized.name,
+            price: normalized.price,
+            stock: normalized.stock,
+            image: normalized.image,
+            description: normalized.description,
+          };
+        });
+        dispatch({ type: 'REHYDRATE', payload: { items: merged } });
+      } catch {
+        // ignore failures to rehydrate
+      }
+    })();
+    return () => {
+      active = false;
+      controller.abort();
+    };
+    // We intentionally run this only once on mount to avoid loops
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const value = useMemo(() => ({
     state,

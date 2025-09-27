@@ -1,6 +1,7 @@
 import type { Producto } from '../../../../domain/entities';
 import { formatCurrency } from '../../../../utils/currency';
 import placeholder from '../../../../assets/product-placeholder.svg';
+import { useToast } from '../../../common/toastContext';
 
 const FALLBACK_IMAGE = placeholder;
 
@@ -13,8 +14,8 @@ type ProductCardProps = {
 };
 
 export function ProductCard({ product, inCartQuantity, onAdd, onIncrement, onDecrement }: ProductCardProps) {
+  const { push } = useToast();
   const hasStock = typeof product.stock === 'number' ? product.stock > 0 : true;
-  const limitedStock = typeof product.stock === 'number' && product.stock <= 5 && product.stock > 0;
   const imageSrc = product.imagen_url?.trim() || FALLBACK_IMAGE;
 
   return (
@@ -32,16 +33,7 @@ export function ProductCard({ product, inCartQuantity, onAdd, onIncrement, onDec
           }}
           className="h-40 w-full object-cover transition duration-500 group-hover:scale-105"
         />
-        {limitedStock && (
-          <span className="absolute left-3 top-3 rounded-full bg-amber-500/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow">
-            ¡Últimas {product.stock}!
-          </span>
-        )}
-        {!hasStock && (
-          <span className="absolute left-3 top-3 rounded-full bg-neutral-800/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white">
-            Sin stock
-          </span>
-        )}
+        {/* stock indicators removed for client view */}
       </div>
 
       <div className="flex flex-col gap-3 p-4">
@@ -54,9 +46,7 @@ export function ProductCard({ product, inCartQuantity, onAdd, onIncrement, onDec
 
         <div className="flex items-center justify-between">
           <span className="text-lg font-bold text-red-600 dark:text-red-400">{formatCurrency(product.precio)}</span>
-          {typeof product.stock === 'number' && (
-            <span className="text-xs font-medium text-neutral-500 dark:text-neutral-400">Stock: {Math.max(product.stock, 0)}</span>
-          )}
+          {/* stock hidden in product card for client view */}
         </div>
 
         <div className="mt-auto">
@@ -87,7 +77,10 @@ export function ProductCard({ product, inCartQuantity, onAdd, onIncrement, onDec
           ) : (
             <button
               type="button"
-              onClick={() => onAdd(product)}
+              onClick={() => {
+                onAdd(product);
+                if (typeof push === 'function') push({ title: 'Añadido', description: `${product.nombre_producto} agregado al carrito` });
+              }}
               disabled={!hasStock}
               className="w-full rounded-xl bg-red-600 px-4 py-2 text-sm font-semibold text-white shadow transition hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-neutral-400/70"
             >
