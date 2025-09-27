@@ -11,4 +11,20 @@ export async function analyzePrompt(prompt: string): Promise<string> {
   return data;
 }
 
+type FeedbackPayload = {
+  messageId?: string;
+  feedbackType: 'useful' | 'clarify' | 'other';
+  message?: string;
+};
+
+// Optional: send feedback to backend. If endpoint doesn't exist, this will surface an error
+export async function sendFeedback(payload: FeedbackPayload): Promise<void> {
+  try {
+    await http('ia/feedback', 'POST', payload);
+  } catch (err) {
+    // swallow errors to keep UX resilient when backend is absent
+    console.warn('feedback failed', err);
+  }
+}
+
 export default {};
