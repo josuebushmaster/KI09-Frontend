@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useOrdenes } from '../hooks/useOrdenes';
-import { getOrden } from '../services/ordenesService';
+import { getOrden, checkoutOrden } from '../services/ordenesService';
 import { useClientes } from '../../clientes';
-import type { Orden } from '../../../../domain/entities/Orden';
+import type { Orden, OrdenProducto } from '../../../../domain/entities';
 import { useStatus } from '../../../core';
 import OrdenItemsManager from './OrdenItemsManager';
+import * as ordenApi from '../../../../infrastructure/api/OrdenApi';
 
 interface OrdenFormData {
   id_cliente: number;
@@ -24,7 +25,7 @@ const OrdenForm = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const isEdit = Boolean(id);
-  const { items: ordenes, loading: loadingOrdenes, create, update } = useOrdenes();
+  const { loading: loadingOrdenes, update, load: loadOrdenes } = useOrdenes();
   const { items: clientes, loading: loadingClientes, load: loadClientes } = useClientes();
   const [loading, setLoading] = useState(false);
   const { show } = useStatus();
@@ -44,60 +45,44 @@ const OrdenForm = () => {
 
   const [errors, setErrors] = useState<Partial<OrdenFormData>>({});
   const [itemsTotal, setItemsTotal] = useState<number | null>(null);
+  const [orderItems, setOrderItems] = useState<OrdenProducto[]>([]);
 
   useEffect(() => {
+    // Cargamos clientes siempre
     loadClientes();
   }, [loadClientes]);
 
   useEffect(() => {
     let cancelled = false;
-    async function ensureOrden() {
+    const ensureOrden = async () => {
       if (!(isEdit && id)) return;
-      const existing = ordenes.find(c => c.id_orden === Number(id));
-      if (existing) {
-        if (!cancelled) {
-          setFormData({
-            id_cliente: existing.id_cliente || 0,
-            estado_orden: existing.estado_orden || 'Pendiente',
-            direccion_envio: existing.direccion_envio || '',
-            ciudad_envio: existing.ciudad_envio || '',
-            codigo_postal_envio: existing.codigo_postal_envio || '',
-            pais_envio: existing.pais_envio || 'México',
-            metodo_envio: existing.metodo_envio || 'Standard',
-            costo_envio: existing.costo_envio || 0,
-            estado_envio: existing.estado_envio || 'Preparando',
-            total_orden: existing.total_orden || 0
-          });
-        }
-        return;
-      }
+      setLoading(true);
       try {
-        setLoading(true);
         const fetched = await getOrden(Number(id));
-        if (!cancelled) {
-          setFormData({
-            id_cliente: fetched.id_cliente || 0,
-            estado_orden: fetched.estado_orden || 'Pendiente',
-            direccion_envio: fetched.direccion_envio || '',
-            ciudad_envio: fetched.ciudad_envio || '',
-            codigo_postal_envio: fetched.codigo_postal_envio || '',
-            pais_envio: fetched.pais_envio || 'México',
-            metodo_envio: fetched.metodo_envio || 'Standard',
-            costo_envio: fetched.costo_envio || 0,
-            estado_envio: fetched.estado_envio || 'Preparando',
-            total_orden: fetched.total_orden || 0,
-          });
-        }
+        if (cancelled) return;
+        setFormData({
+          id_cliente: fetched.id_cliente || 0,
+          estado_orden: fetched.estado_orden || 'Pendiente',
+          direccion_envio: fetched.direccion_envio || '',
+          ciudad_envio: fetched.ciudad_envio || '',
+          codigo_postal_envio: fetched.codigo_postal_envio || '',
+          pais_envio: fetched.pais_envio || 'México',
+          metodo_envio: fetched.metodo_envio || 'Standard',
+          costo_envio: fetched.costo_envio || 0,
+          estado_envio: fetched.estado_envio || 'Preparando',
+          total_orden: fetched.total_orden || 0,
+        });
       } catch (err) {
         const message = err instanceof Error ? err.message : 'No se pudo cargar la orden';
         show({ title: 'Error al cargar', message, detail: err, variant: 'error' });
       } finally {
         if (!cancelled) setLoading(false);
       }
-    }
+    };
+
     ensureOrden();
     return () => { cancelled = true; };
-  }, [id, isEdit, ordenes, show]);
+  }, [id, isEdit, show, loadOrdenes]);
 
   // Si los ítems calculan un total, actualizamos el campo del formulario (pero permitimos override manual)
   useEffect(() => {
@@ -173,14 +158,29 @@ const OrdenForm = () => {
           message: 'La orden se actualizó correctamente.',
           variant: 'success'
         });
+        // Si hay ítems locales, ya deberían estar persistidos para una orden existente
       } else {
+        // Crear orden y persistir ítems (si existen)
         const createPayload = { ...baseData, fecha_orden: new Date().toISOString() };
-        await create(createPayload);
-        show({
-          title: 'Orden creada',
-          message: 'La orden se creó correctamente.',
-          variant: 'success'
-        });
+        const created = await ordenApi.createOrden(createPayload as Partial<Orden>);
+        // persistir ítems asociados
+        if (orderItems && orderItems.length) {
+          for (const it of orderItems) {
+            await ordenApi.addOrdenItem({
+              id_producto: it.id_producto,
+              cantidad: it.cantidad,
+              precio_unitario: Number(it.precio_unitario ?? 0),
+              id_orden: created.id_orden,
+            });
+          }
+        }
+        // recargar lista de ordenes en la UI
+        try {
+          await loadOrdenes();
+        } catch (e) {
+          console.warn('No se pudo recargar órdenes tras crear', e);
+        }
+        show({ title: 'Orden creada', message: 'La orden y sus ítems se guardaron correctamente.', variant: 'success' });
       }
       
       navigate('/ordenes');
@@ -192,6 +192,43 @@ const OrdenForm = () => {
         detail: error,
         variant: 'error'
       });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleConfirmVenta = async () => {
+    if (!validateForm()) return;
+    if (!orderItems || orderItems.length === 0) {
+      show({ title: 'Sin ítems', message: 'Agrega al menos un ítem antes de confirmar la venta.', variant: 'info' });
+      return;
+    }
+    const metodo = window.prompt('Método de pago (ej. Efectivo, Tarjeta)', 'Efectivo');
+    if (!metodo) return;
+    setLoading(true);
+    try {
+      const cabecera: Omit<Orden, 'id_orden' | 'total_orden' | 'created_at' | 'updated_at'> = {
+        id_cliente: formData.id_cliente,
+        fecha_orden: new Date().toISOString(),
+        estado_orden: formData.estado_orden,
+        direccion_envio: formData.direccion_envio,
+        ciudad_envio: formData.ciudad_envio,
+        codigo_postal_envio: formData.codigo_postal_envio,
+        pais_envio: formData.pais_envio,
+        metodo_envio: formData.metodo_envio,
+        costo_envio: formData.costo_envio,
+        estado_envio: formData.estado_envio,
+      };
+
+      // mapear a CartItem esperado por checkoutOrden
+  const cart = orderItems.map(it => ({ id_producto: it.id_producto, cantidad: it.cantidad, precio_unitario: Number(it.precio_unitario ?? 0) }));
+      await checkoutOrden(cabecera, cart, metodo);
+  try { await loadOrdenes(); } catch (e) { console.warn('No se pudo recargar órdenes', e); }
+      show({ title: 'Venta confirmada', message: 'La venta fue registrada correctamente.', variant: 'success' });
+      navigate('/ventas');
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      show({ title: 'Error al confirmar venta', message, detail: err, variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -473,7 +510,11 @@ const OrdenForm = () => {
                 )}
               </div>
               <div className="md:col-span-2">
-                <OrdenItemsManager id_orden={isEdit && id ? Number(id) : undefined} onChangeTotal={(t) => setItemsTotal(t)} />
+                <OrdenItemsManager
+                  id_orden={isEdit && id ? Number(id) : undefined}
+                  onChangeTotal={(t) => setItemsTotal(t)}
+                  onItemsChange={(items) => setOrderItems(items)}
+                />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -521,6 +562,16 @@ const OrdenForm = () => {
               </>
             )}
           </button>
+          {!isEdit && (
+            <button
+              type="button"
+              onClick={handleConfirmVenta}
+              disabled={loading}
+              className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2.5 rounded-lg font-medium shadow-md transition"
+            >
+              Confirmar venta
+            </button>
+          )}
         </div>
       </form>
     </div>

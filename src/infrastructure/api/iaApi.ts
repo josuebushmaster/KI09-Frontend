@@ -1,13 +1,13 @@
 import { http } from './http';
-import type { IAResponse } from '../../domain/entities/ia';
 
 type AnalyzePayload = {
   prompt: string;
 };
 
-export async function analyzePrompt(prompt: string): Promise<IAResponse> {
+// Backend returns a plain string (application/json string), e.g. "Respuesta ..."
+export async function analyzePrompt(prompt: string): Promise<string> {
   const payload: AnalyzePayload = { prompt };
-  const data = await http<IAResponse>('ia/analizar', 'POST', payload);
+  const data = await http<string>('ia/analizar', 'POST', payload);
   return data;
 }
 

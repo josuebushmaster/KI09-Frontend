@@ -7,6 +7,7 @@ import { ProductosPage, ProductoCreatePage, ProductoEditPage } from './presentat
 import { ClientesPage, ClienteCreatePage, ClienteEditPage } from './presentation/modules/clientes';
 import { OrdenesPage, OrdenCreatePage, OrdenEditPage } from './presentation/modules/ordenes';
 import { VentasPage } from './presentation/modules/ventas';
+import AstroChatPage from './presentation/modules/ia/pages/AstroChatPage';
 
 // Placeholder components (reemplaza con tus componentes reales)
 const Productos = () => <ProductosPage />;
@@ -33,6 +34,7 @@ function App() {
             <Route path="/clientes/create" element={<ClienteCreatePage />} />
             <Route path="/clientes/:id/edit" element={<ClienteEditPage />} />
             <Route path="/ventas" element={<VentasPage />} />
+            <Route path="/astro" element={<AstroChatPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </ErrorBoundary>

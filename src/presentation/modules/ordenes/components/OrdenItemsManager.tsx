@@ -6,9 +6,10 @@ import { useProductos } from '../../producto/hooks/useProductos';
 interface Props {
   id_orden?: number;
   onChangeTotal?: (total: number) => void;
+  onItemsChange?: (items: OrdenProducto[]) => void;
 }
 
-const OrdenItemsManager = ({ id_orden, onChangeTotal }: Props) => {
+const OrdenItemsManager = ({ id_orden, onChangeTotal, onItemsChange }: Props) => {
   const { items, loadByOrden, create, update, remove } = useOrdenItems();
   const { items: productos, load: loadProductos } = useProductos();
   const [local, setLocal] = useState<OrdenProducto[]>([]);
@@ -31,6 +32,10 @@ const OrdenItemsManager = ({ id_orden, onChangeTotal }: Props) => {
   const total = useMemo(() => local.reduce((s, it) => s + (it.precio_unitario || 0) * it.cantidad, 0), [local]);
 
   useEffect(() => { if (onChangeTotal) onChangeTotal(Number(total.toFixed(2))); }, [total, onChangeTotal]);
+
+  useEffect(() => {
+    if (onItemsChange) onItemsChange(local);
+  }, [local, onItemsChange]);
 
   const doAdd = async () => {
     if (!newProdId || newQty <= 0) return;

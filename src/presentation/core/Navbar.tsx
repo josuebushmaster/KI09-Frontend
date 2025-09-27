@@ -158,6 +158,15 @@ const Navbar = ({ isCollapsed, setIsCollapsed }: NavbarProps) => {
             </svg>
           ),
         },
+        {
+          path: '/astro',
+          label: 'IA (Astro)',
+          icon: (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m9-9H3" />
+            </svg>
+          ),
+        },
         
       ],
     },
