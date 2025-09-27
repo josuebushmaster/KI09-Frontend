@@ -246,11 +246,11 @@ export default function AstroChatPage() {
               <img src={astraLogo} alt="Astra logo" className="h-14 w-14 sm:h-20 sm:w-20 object-cover rounded-full shadow-sm" />
             </div>
             <div className="flex-1 ml-3">
-              <div className="w-full h-36 sm:h-44 md:h-56 bg-white/6 p-3 rounded-xl flex items-center justify-center overflow-hidden shadow-2xl border-2 border-white/10">
+              <div className="w-full h-28 sm:h-32 md:h-40 bg-white/6 p-2 rounded-lg flex items-center justify-center overflow-hidden shadow-2xl border-2 border-white/10">
                 <img
                   src={logoUma}
                   alt="Logo UMA"
-                  className="w-full h-full object-contain rounded-xl"
+                  className="w-full h-full object-contain rounded-lg"
                 />
               </div>
             </div>

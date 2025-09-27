@@ -16,8 +16,8 @@ const SAMPLE_REPORTS: Report[] = [
 
 function ReportEmbed({ url, title }: { url: string; title: string }) {
   return (
-    <div className="rounded-xl border border-neutral-200 bg-white p-2 shadow-sm">
-      <div className="relative w-full pb-[56.25%]">
+    <div className="rounded-xl border border-neutral-200 bg-white p-2 lg:p-4 shadow-sm">
+      <div className="relative w-full pb-[56.25%] lg:pb-0 lg:min-h-[70vh]">
         <iframe
           title={title}
           src={url}
@@ -74,15 +74,16 @@ export default function AnalyticsPage() {
 
   return (
     <div className="min-h-screen bg-neutral-50 p-4">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <header className="rounded-2xl bg-white/80 p-6 shadow-sm">
+      <div className="mx-auto max-w-8xl space-y-4">
+  <header className="rounded-2xl bg-white/80 p-4 shadow-sm">
           <h1 className="text-2xl font-semibold text-neutral-900">Analíticas</h1>
           <p className="mt-1 text-sm text-neutral-500">Reportes embebidos de Looker Studio dentro de la aplicación.</p>
         </header>
 
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-6">
-          <aside className="w-full md:w-64">
-            <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm">
+  <div className="flex flex-col gap-3 md:flex-row md:items-start md:gap-4">
+          <main className="flex-1">
+            {/* Reports panel moved above the graph for a wider report area */}
+            <div className="rounded-2xl border border-neutral-200 bg-white p-4 shadow-sm mb-2">
               <h3 className="text-sm font-semibold text-neutral-800">Reportes</h3>
               <p className="mt-2 text-xs text-neutral-500">Pega la URL de Looker Studio para añadirla como reporte embebido.</p>
               <div className="mt-3 flex gap-2">
@@ -104,8 +105,6 @@ export default function AnalyticsPage() {
                       setInputError('La URL no parece ser de Looker Studio');
                       return;
                     }
-                    // Try to extract report id and optional page id
-                    // Matches: /reporting/<reportId>/page/<pageId>
                     const m = raw.match(/reporting\/([^/?#]+)(?:\/page\/([^/?#]+))?/i);
                     let embed = '';
                     if (m) {
@@ -113,7 +112,6 @@ export default function AnalyticsPage() {
                       const pageId = m[2];
                       embed = `https://lookerstudio.google.com/embed/reporting/${reportId}` + (pageId ? `/page/${pageId}` : '');
                     } else {
-                      // fallback: if already an embed URL or other format, try converting /reporting/ -> /embed/reporting/
                       if (raw.includes('/reporting/')) embed = raw.replace('/reporting/', '/embed/reporting/');
                       else if (raw.includes('/embed/reporting/')) embed = raw;
                       else {
@@ -123,7 +121,6 @@ export default function AnalyticsPage() {
                     }
 
                     const id = `r_${Date.now()}`;
-                    // Derive title from URL: try last path segment or fallback name
                     let title = '';
                     try {
                       const u = new URL(raw);
@@ -226,9 +223,6 @@ export default function AnalyticsPage() {
                 ))}
               </div>
             </div>
-          </aside>
-
-          <main className="flex-1">
             <div className="rounded-3xl border border-neutral-200 bg-white p-6 shadow-md">
               <h2 className="text-lg font-semibold text-neutral-900">{active?.title}</h2>
               <div className="mt-4">

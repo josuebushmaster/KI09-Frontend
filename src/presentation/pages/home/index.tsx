@@ -31,15 +31,12 @@ const Home = () => {
 
   // Filtros Clientes
   const [cliFilter, setCliFilter] = useState('');
-  const [cliAgeMin, setCliAgeMin] = useState<string>('');
-  const [cliAgeMax, setCliAgeMax] = useState<string>('');
+  // (removed age inputs — no longer used in the summary cards)
 
   // Filtros Ventas
   const [venDateFrom, setVenDateFrom] = useState<string>('');
   const [venDateTo, setVenDateTo] = useState<string>('');
-  const [venMinTotal, setVenMinTotal] = useState<string>('');
-  const [venMaxTotal, setVenMaxTotal] = useState<string>('');
-  const [venMetodo, setVenMetodo] = useState<'all' | string>('all');
+  // (removed extra ventas filters — kept date filters only)
 
   // Cargar datos al montar para que las tarjetas muestren información real
   useEffect(() => {
@@ -123,34 +120,21 @@ const Home = () => {
   // Filtro de clientes
   const filteredClientes = useMemo(() => {
     const q = cliFilter.trim().toLowerCase();
-    const minAge = cliAgeMin.trim() !== '' ? Number(cliAgeMin) : null;
-    const maxAge = cliAgeMax.trim() !== '' ? Number(cliAgeMax) : null;
     return clientes.filter((cl) => {
       const name = `${cl.nombre || ''} ${cl.apellido || ''}`.toLowerCase();
       const email = (cl.email || '').toLowerCase();
       const phone = (cl.telefono || '').toLowerCase();
       const textOk = q ? (name.includes(q) || email.includes(q) || phone.includes(q)) : true;
-      const age = cl.edad ?? null;
-      const ageOk = age === null ? (minAge === null && maxAge === null) :
-        ( (minAge === null || age >= minAge) && (maxAge === null || age <= maxAge) );
-      return textOk && ageOk;
+      return textOk;
     });
-  }, [clientes, cliFilter, cliAgeMin, cliAgeMax]);
+  }, [clientes, cliFilter]);
 
   // Filtro de ventas
-  const metodoOptions = useMemo(() => {
-    const set = new Set<string>();
-    for (const v of ventas) {
-      if (v.metodo_pago) set.add(v.metodo_pago);
-    }
-    return Array.from(set);
-  }, [ventas]);
+  // metodoOptions removed — not used after summary-card cleanup
 
   const filteredVentas = useMemo(() => {
     const from = venDateFrom ? new Date(venDateFrom) : null;
     const to = venDateTo ? new Date(venDateTo) : null;
-    const minTotal = venMinTotal.trim() !== '' ? Number(venMinTotal) : null;
-    const maxTotal = venMaxTotal.trim() !== '' ? Number(venMaxTotal) : null;
     return ventas.filter((v) => {
       let dateOk = true;
       if (from || to) {
@@ -165,18 +149,66 @@ const Home = () => {
           }
         }
       }
-      const total = Number(v.total_venta ?? 0);
-      const totalOk = (minTotal === null || total >= minTotal) && (maxTotal === null || total <= maxTotal);
-      const metodoOk = venMetodo === 'all' ? true : (v.metodo_pago || '') === venMetodo;
-      return dateOk && totalOk && metodoOk;
+      return dateOk;
     });
-  }, [ventas, venDateFrom, venDateTo, venMinTotal, venMaxTotal, venMetodo]);
+  }, [ventas, venDateFrom, venDateTo]);
 
   const totalVentasMonto = useMemo(() => {
     try {
       return filteredVentas.reduce((acc, v) => acc + (v.total_venta ?? 0), 0);
     } catch { return 0; }
   }, [filteredVentas]);
+
+  // KPIs for Resumen del Sistema
+  const ventasThisMonthAmount = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    let sum = 0;
+    for (const v of ventas) {
+      const d = new Date(v.fecha_venta);
+      if (!Number.isNaN(d.getTime()) && d.getFullYear() === y && d.getMonth() === m) {
+        sum += Number(v.total_venta ?? 0);
+      }
+    }
+    return sum;
+  }, [ventas]);
+
+  const ventasPrevMonthAmount = useMemo(() => {
+    const now = new Date();
+    const prev = new Date(now.getFullYear(), now.getMonth() - 1);
+    const y = prev.getFullYear();
+    const m = prev.getMonth();
+    let sum = 0;
+    for (const v of ventas) {
+      const d = new Date(v.fecha_venta);
+      if (!Number.isNaN(d.getTime()) && d.getFullYear() === y && d.getMonth() === m) {
+        sum += Number(v.total_venta ?? 0);
+      }
+    }
+    return sum;
+  }, [ventas]);
+
+  const ventasThisMonthCount = useMemo(() => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = now.getMonth();
+    let count = 0;
+    for (const v of ventas) {
+      const d = new Date(v.fecha_venta);
+      if (!Number.isNaN(d.getTime()) && d.getFullYear() === y && d.getMonth() === m) count++;
+    }
+    return count;
+  }, [ventas]);
+
+  const monthlyGrowthPercent = useMemo(() => {
+    const prev = ventasPrevMonthAmount;
+    const curr = ventasThisMonthAmount;
+    if (prev === 0) {
+      return curr === 0 ? 0 : null; // null means no baseline to compute growth
+    }
+    return Math.round(((curr - prev) / prev) * 100);
+  }, [ventasThisMonthAmount, ventasPrevMonthAmount]);
 
   const LoadingSpinner = () => (
     <div className="animate-spin rounded-full h-6 w-6 border-2 border-gray-300 border-t-gray-800"></div>
@@ -207,50 +239,12 @@ const Home = () => {
                 </p>
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-4">
-                <Link 
-                  to="/categorias" 
-                  className="group inline-flex items-center justify-center gap-2 bg-white text-red-900 px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
-                  </svg>
-                  Ver Categorías
-                  <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                  </svg>
-                </Link>
-                <Link 
-                  to="/productos" 
-                  className="group inline-flex items-center justify-center gap-2 bg-red-700/20 backdrop-blur text-white border border-white/30 px-8 py-4 rounded-xl font-semibold hover:bg-red-700/30 transition-all duration-200"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z" />
-                  </svg>
-                  Ver Productos
-                </Link>
-                <Link
-                  to="/astro"
-                  className="relative group inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl font-semibold border border-white/30 text-white overflow-hidden bg-gradient-to-tr from-purple-600/30 via-fuchsia-500/25 to-pink-500/30 ring-2 ring-white/20 shadow-2xl hover:scale-105 transition-transform"
-                >
-                  <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-[radial-gradient(circle_at_30%_30%,_rgba(255,255,255,0.35),_transparent_40%)]" />
-                  <span className="absolute -inset-0.5 rounded-xl blur-lg opacity-30 group-hover:opacity-60 transition-opacity duration-300 bg-gradient-to-r from-purple-500/60 to-pink-500/60" />
-                  <span className="relative z-10 flex items-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l2.5 5 5 2.5-5 2.5-2.5 5-2.5-5L5 10.5 10 8 12 3z" />
-                    </svg>
-                    Ir a IA Astra
-                    <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                    </svg>
-                  </span>
-                </Link>
-              </div>
+              <div className="flex">{/* CTA moved into logo container to avoid moving the logo */}</div>
             </div>
             
             {/* Right side: Logo UMA — esquinas más redondeadas, elevado y mostrando la imagen completa */}
             <div className="flex items-center justify-center w-full">
-              <div className="relative w-full p-0 -mt-24 md:-mt-48">
+              <div className="relative w-full p-0 -mt-12 md:-mt-24">
                 <div className="w-full h-64 sm:h-80 bg-white/6 p-6 rounded-3xl backdrop-blur border border-white/12 flex items-center justify-center overflow-hidden">
                   <img
                     src={logoUma}
@@ -260,6 +254,19 @@ const Home = () => {
                 </div>
                 <div className="absolute -top-3 -right-3 w-6 h-6 bg-yellow-400 rounded-full animate-pulse"></div>
                 <div className="absolute -bottom-3 -left-3 w-5 h-5 bg-green-400 rounded-full animate-pulse delay-300"></div>
+                {/* CTA dentro del contenedor del logo, centrado y sin mover el logo */}
+                <div className="absolute left-1/2 transform -translate-x-1/2 bottom-6">
+                  <Link
+                    to="/astro"
+                    className="inline-flex items-center gap-3 px-8 py-3 rounded-3xl font-semibold text-white bg-gradient-to-tr from-purple-600 via-fuchsia-500 to-pink-500 shadow-lg hover:scale-105 transition-transform duration-200"
+                    aria-label="Ir a IA Astra"
+                  >
+                    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 3l2.5 5 5 2.5-5 2.5L12 18l-2.5-4-5-2.5L9.5 8 12 3z" />
+                    </svg>
+                    Ir a IA Astra
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
@@ -521,138 +528,9 @@ const Home = () => {
         <div className="grid lg:grid-cols-3 gap-8">
           <div className="lg:col-span-2">
             <div className="bg-white/95 backdrop-blur rounded-2xl shadow-xl border border-gray-200/50 p-8">
-              <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-8">
                 <div>
                   <h3 className="text-2xl font-bold text-gray-800 mb-2">Resumen del Sistema</h3>
-                {/* Clientes */}
-                <div className="group bg-white/95 backdrop-blur rounded-3xl shadow-xl border border-gray-200/50 p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="w-14 h-14 bg-gradient-to-br from-sky-500 to-blue-600 rounded-xl flex items-center justify-center text-white shadow-lg">
-                      <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Z" />
-                      </svg>
-                    </div>
-                    <Link to="/clientes" className="text-blue-600 hover:text-blue-700 font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
-                      Gestionar
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                      </svg>
-                    </Link>
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-2xl font-bold text-gray-800">Clientes</h3>
-                    <input
-                      value={cliFilter}
-                      onChange={(e) => setCliFilter(e.target.value)}
-                      placeholder="Buscar nombre, email o teléfono..."
-                      className="mt-2 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                    />
-                    <div className="mt-2 grid grid-cols-1 gap-2 md:grid-cols-2">
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        placeholder="Edad mín."
-                        value={cliAgeMin}
-                        onChange={(e) => setCliAgeMin(e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      />
-                      <input
-                        type="number"
-                        inputMode="numeric"
-                        placeholder="Edad máx."
-                        value={cliAgeMax}
-                        onChange={(e) => setCliAgeMax(e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                      />
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      {loadingClientes ? (
-                        <LoadingSpinner />
-                      ) : (
-                        <div className="text-3xl font-black text-gray-900">{filteredClientes.length}</div>
-                      )}
-                      <div className="text-sm text-gray-500">Coincidencias</div>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-sky-500 to-blue-600 h-2 rounded-full w-1/2"></div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Ventas */}
-                <div className="group bg-white/95 backdrop-blur rounded-3xl shadow-xl border border-gray-200/50 p-8 hover:shadow-2xl transition-all duration-300 hover:-translate-y-1">
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="w-14 h-14 bg-gradient-to-br from-fuchsia-500 to-pink-600 rounded-xl flex items-center justify-center text-white shadow-lg">
-                      <svg className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.467-.22-2.121-.659-1.172-.879-1.172-2.303 0-3.182s3.07-.879 4.242 0l.879.659M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <Link to="/ventas" className="text-fuchsia-600 hover:text-fuchsia-700 font-semibold text-sm flex items-center gap-1 group-hover:gap-2 transition-all">
-                      Gestionar
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                      </svg>
-                    </Link>
-                  </div>
-                  <div className="space-y-2">
-                    <h3 className="text-2xl font-bold text-gray-800">Ventas</h3>
-                    <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
-                      <input
-                        type="date"
-                        aria-label="Fecha desde"
-                        value={venDateFrom}
-                        onChange={(e) => setVenDateFrom(e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20"
-                      />
-                      <input
-                        type="date"
-                        aria-label="Fecha hasta"
-                        value={venDateTo}
-                        onChange={(e) => setVenDateTo(e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20"
-                      />
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        placeholder="Monto mín."
-                        value={venMinTotal}
-                        onChange={(e) => setVenMinTotal(e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20"
-                      />
-                      <input
-                        type="number"
-                        inputMode="decimal"
-                        placeholder="Monto máx."
-                        value={venMaxTotal}
-                        onChange={(e) => setVenMaxTotal(e.target.value)}
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20"
-                      />
-                      <select
-                        aria-label="Método de pago"
-                        value={venMetodo}
-                        onChange={(e) => setVenMetodo(e.target.value as 'all' | string)}
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500/20 md:col-span-2"
-                      >
-                        <option value="all">Todos los métodos</option>
-                        {metodoOptions.map((m) => (
-                          <option key={m} value={m}>{m}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                      {loadingVentas ? (
-                        <LoadingSpinner />
-                      ) : (
-                        <div className="text-3xl font-black text-gray-900">{formatCurrency(totalVentasMonto)}</div>
-                      )}
-                      <div className="text-sm text-gray-500">Total vendido (filtrado) · {filteredVentas.length} ventas</div>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-gradient-to-r from-fuchsia-500 to-pink-600 h-2 rounded-full w-2/3"></div>
-                    </div>
-                  </div>
-                </div>
-
                   <p className="text-gray-600">Métricas y estadísticas en tiempo real</p>
                 </div>
                 <div className="flex items-center gap-2 px-4 py-2 bg-green-50 text-green-700 rounded-xl text-sm font-medium">
@@ -671,7 +549,9 @@ const Home = () => {
                     </div>
                     <div>
                       <div className="text-sm text-gray-600">Crecimiento mensual</div>
-                      <div className="text-2xl font-bold text-gray-800">+24%</div>
+                      <div className="text-2xl font-bold text-gray-800">
+                        {monthlyGrowthPercent === null ? '—' : `${monthlyGrowthPercent >= 0 ? '+' : ''}${monthlyGrowthPercent}%`}
+                      </div>
                     </div>
                   </div>
                   
@@ -701,7 +581,7 @@ const Home = () => {
                     </div>
                     <div>
                       <div className="text-sm text-gray-600">Ventas este mes</div>
-                      <div className="text-2xl font-bold text-gray-800">$48,294</div>
+                      <div className="text-2xl font-bold text-gray-800">{formatCurrency(ventasThisMonthAmount)}</div>
                     </div>
                   </div>
                   
