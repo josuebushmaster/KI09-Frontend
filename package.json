@@ -4,10 +4,11 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
+  "dev": "vite",
+  "build": "tsc -b && vite build",
+  "start": "serve -s dist",
+  "lint": "eslint .",
+  "preview": "vite preview"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.13",
